@@ -22,8 +22,6 @@ QWEN_CONFIG_06_B = {
     "tie_word_embeddings": True,            # 输入embedding和输出lm head是否共享权重
     "torch_dtype": torch.bfloat16,          # 低精度dtype，用于降低显存占用
 }
-# test 更新
-# 教师又更新了代码
 
 class Qwen3Model(nn.Module):
     def __init__(self, cfg):
@@ -299,9 +297,10 @@ def compute_rope_params(head_dim, theta_base=10_000, context_length=4096, dtype=
     inv_freq = 1.0 / scales
 
 
-    # 计算位置索引：[0,1,2,3,...,context_length-1] shape: (context_length,)
+    # 计算位置索引：[0,1,2,3,...,context_length-1] shape: (context_length,)，表示的就是m*θ当中，所有m的可能取值
     # positions代表的就是 token在序列当中所有可能的位置
     positions = torch.arange(context_length, dtype=dtype)
+    positions = torch.arange(0,context_length,1, dtype=dtype)
 
     # 计算每个位置的每组旋转的角度
     # positions: [0,1,2,3.... context_length]
@@ -319,7 +318,7 @@ def compute_rope_params(head_dim, theta_base=10_000, context_length=4096, dtype=
     # [theta_0, theta_1, theta_2]
     # [theta_0, theta_1, theta_2]
 
-    # 哈达玛积运算
+    # 哈达玛积运算： shape: (context_length, head_dim / 2)
     # [0* theata_0, 0* theta_1, 0* theta_2]
     # [1*theta_0, 1*theta_1, 1*theta_2]
     # [2*theta_0, 2*theta_1, 2*theta_2]
@@ -334,6 +333,7 @@ def compute_rope_params(head_dim, theta_base=10_000, context_length=4096, dtype=
     # [0* theata_0, 0* theta_1, 0* theta_2]
     # [1*theta_0, 1*theta_1, 1*theta_2]
     # [2*theta_0, 2*theta_1, 2*theta_2]
+    #angles: shape: (context_length, head_dim / 2)
     angles = positions.unsqueeze(1) * inv_freq.unsqueeze(0)  # Shape: (context_length, head_dim // 2)
 
     # 由于是前半部分和后半部分对应索引位置处做旋转，所以此处将angels复制，从而使得旋转的一组二维分量，共享一个angles值
@@ -392,9 +392,11 @@ def apply_rope(x, cos, sin, offset=0):
         最终计算：
             x_rotated = x * pos_cos + rotate_half(x) * pos_sin
         也即：
-            x_rotated = [first_half, second_half] * pos_cos + [-second_half, first_half] * pos_sin
+            x_rotated = [x0, x1, x2, x3, x4, x5, x6, x7] * [cos(a0), cos(a1), cos(a2), cos(a3), cos(a0), cos(a1), cos(a2), cos(a3)] + [-x4, -x5, -x6, -x7, x0, x1, x2, x3] *[sin(a0), sin(a1), sin(a2), sin(a3), sin(a0), sin(a1), sin(a2), sin(a3)] 
         由于first_half和second_half，也都是向量，所以上面的式子，可以拆解成对应位置处的处理。
-                      
+            
+            X_rotated= [x0 * cos(a0) - x4* sin(a0), x1*cos(a1)-x5*sin(a1), ..... , x4*cos(a0)*sin(a0) ]
+            x0和x4所组成的这一组二维·自向量
         现从first_half和second_half当中，取第0个索引位置处的值，x0和x4，计算最终结果：
             [x0*cos(a0) - x4 * sin(a0), x4*cos(a0) + x0*sin(a0)]，
         展开后就是：
@@ -534,6 +536,54 @@ class Qwen3Tokenizer:
                 s += "\n<think>\n\n</think>\n\n"
         return s
 
+def load_qwen3_safetensors_weights(model: Qwen3Model, model_dir="model/Qwen3-0.6B"):
+    """
+    直接从本地 .safetensors 权重文件中读取Qwen3参数，并加载到当前手写的Qwen3Model结构中。
+
+    这个函数不实例化 HuggingFace 的 Qwen3ForCausalLM。
+    它做的事情是：
+        1. 读取 model.safetensors 中的 tensor
+        2. 将 HuggingFace 参数名映射到当前教学模型的参数名
+        3. 使用 strict=True 确认所有参数都完整对齐
+    """
+    from safetensors.torch import load_file
+
+    model_dir = Path(model_dir)
+    safetensors_path = model_dir / "model.safetensors"
+    if not safetensors_path.is_file():
+        raise FileNotFoundError(f"没有找到权重文件：{safetensors_path}")
+
+    hf_state = load_file(str(safetensors_path), device="cpu")
+
+    mapped_state = {
+        "tok_emb.weight": hf_state["model.embed_tokens.weight"],
+        "final_norm.scale": hf_state["model.norm.weight"],
+        # Qwen3配置中tie_word_embeddings=True。这里仍然兼容权重文件中显式保存lm_head.weight的情况。
+        "out_head.weight": hf_state.get("lm_head.weight", hf_state["model.embed_tokens.weight"]),
+    }
+
+    for i in range(model.cfg["num_hidden_layers"]):
+        hf_prefix = f"model.layers.{i}"
+        my_prefix = f"trf_blocks.{i}"
+
+        mapped_state[f"{my_prefix}.norm1.scale"] = hf_state[f"{hf_prefix}.input_layernorm.weight"]
+        mapped_state[f"{my_prefix}.norm2.scale"] = hf_state[f"{hf_prefix}.post_attention_layernorm.weight"]
+
+        mapped_state[f"{my_prefix}.att.q_proj.weight"] = hf_state[f"{hf_prefix}.self_attn.q_proj.weight"]
+        mapped_state[f"{my_prefix}.att.k_proj.weight"] = hf_state[f"{hf_prefix}.self_attn.k_proj.weight"]
+        mapped_state[f"{my_prefix}.att.v_proj.weight"] = hf_state[f"{hf_prefix}.self_attn.v_proj.weight"]
+        mapped_state[f"{my_prefix}.att.o_proj.weight"] = hf_state[f"{hf_prefix}.self_attn.o_proj.weight"]
+
+        mapped_state[f"{my_prefix}.att.q_norm.scale"] = hf_state[f"{hf_prefix}.self_attn.q_norm.weight"]
+        mapped_state[f"{my_prefix}.att.k_norm.scale"] = hf_state[f"{hf_prefix}.self_attn.k_norm.weight"]
+
+        mapped_state[f"{my_prefix}.ff.gate_proj.weight"] = hf_state[f"{hf_prefix}.mlp.gate_proj.weight"]
+        mapped_state[f"{my_prefix}.ff.up_proj.weight"] = hf_state[f"{hf_prefix}.mlp.up_proj.weight"]
+        mapped_state[f"{my_prefix}.ff.down_proj.weight"] = hf_state[f"{hf_prefix}.mlp.down_proj.weight"]
+
+    model.load_state_dict(mapped_state, strict=True)
+    return model
+
 def generate_text(input_ids,model:Qwen3Model,tokenizer:Qwen3Tokenizer,max_len:int=100):
     
     # 每次调用时，重置一下current_pos位置的值
@@ -557,6 +607,7 @@ def generate_text(input_ids,model:Qwen3Model,tokenizer:Qwen3Tokenizer,max_len:in
         # 进行softmax操作，获得概率分布
         # probs.shape: batch_size,vocab_size
         probs = torch.softmax(logits,dim=-1)
+        # torch.argmax(probs,dim=-1) 注意：不是通过argmax，获取到next token
         # next_token_id.shape: batch_size, 表示每个样本，下一个token是什么
         next_token_id = torch.multinomial(probs,num_samples=1).squeeze(-1)
 
@@ -570,13 +621,17 @@ def generate_text(input_ids,model:Qwen3Model,tokenizer:Qwen3Tokenizer,max_len:in
 
         final_output = torch.cat([final_output,next_input],dim=-1)
         # 自回归过程中的终止条件：1、生成的token数量达到最大值 2、生成了EOS Token id 
-        while generated_token<max_len:
+        while generated_token<max_len and next_token_id != tokenizer.eos_token_id:
             # 当前KV_Cache就不是空字典了，当前这个dict中的键，就是不同的TransformerBlock的层，值就是这一层所对应的KV Cache
             # output_logits: shape: batch_size, seq_len, vocab_size
             output_logits =  model(next_input,kv_cache)
-            
+
+            # logits: batch_size, vocab_size
             logits = output_logits[:,-1,:]
+            # probs.shape: batch_size, vocab_size
             probs = torch.softmax(logits,dim=-1)
+            # 依概率采样： torch.multinomial(probs,num_samples=1): batch_size, 1 
+            # squeeze(-1)：batch_size(1)
             next_token_id = torch.multinomial(probs,num_samples=1).squeeze(-1)
             # next_input.shape : batch_size, 1
             next_input = next_token_id.unsqueeze(-1)
@@ -585,7 +640,7 @@ def generate_text(input_ids,model:Qwen3Model,tokenizer:Qwen3Tokenizer,max_len:in
 
             generated_token += 1 
 
-    
+    # final_output有batch_size的维度，所以需要索引获取到第0个结果
     res_list = final_output[0].tolist()
     print(res_list)
     
@@ -599,8 +654,9 @@ def main():
     注意：这里只初始化了模型结构，没有加载预训练权重，所以输出不代表真实Qwen3效果。
     """
     import torch
-    tokenizer = Qwen3Tokenizer(tokenizer_file_path=r"model/Qwen3-0.6B/tokenizer.json")
+    tokenizer = Qwen3Tokenizer(tokenizer_file_path=r"model/Qwen3-0.6B/tokenizer.json",)
     model = Qwen3Model(QWEN_CONFIG_06_B)
+    model = load_qwen3_safetensors_weights(model)
     model.eval()
     model.to("cuda")
     input_ids = torch.tensor(tokenizer.encode("你好，今天天气真好啊")).unsqueeze(0).to("cuda")
