@@ -451,6 +451,7 @@ def train(dpo_config:DPOConfig):
         # 3、模型前向传播：4次
 
         # 第一次：被训练的模型，基于chosen数据，算得logits
+        # 4*2000*15w
         chosen_output_logits = model(chosen_input_ids).logits
 
         # 第二次：被训练的模型，基于rejected数据，算得logits
