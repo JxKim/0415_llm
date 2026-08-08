@@ -31,7 +31,7 @@ converted_data = data.map(convert_func,batched=True,remove_columns=data["train"]
 
 from trl.trainer.sft_config import SFTConfig
 import os
-os.environ["TENSORBOARD_LOGGING_DIR"] = "./logs/04_trl_sft_demo"
+os.environ["TENSORBOARD_LOGGING_DIR"] = "./logs/accelerate_demo"
 config = SFTConfig(
     # 数据规模相关的
     per_device_train_batch_size=4,
@@ -57,7 +57,7 @@ config = SFTConfig(
     save_strategy="steps",
     save_steps=50,
     save_total_limit=3,
-    output_dir="./finetuned/04_trl_sft_demo", # 保存的是检查点
+    output_dir="./finetuned/accelerate_demo", # 保存的是检查点
     bf16=True,
     gradient_checkpointing=False,
     activation_offloading=False,
@@ -69,11 +69,10 @@ config = SFTConfig(
 )
 
 
-from transformers import AutoModelForCausalLM
+from transformers import AutoModelForCausalLM,AutoTokenizer
 from trl.trainer.sft_trainer import SFTTrainer
-from tyro import conf
-model = AutoModelForCausalLM.from_pretrained("model/Qwen3-0.6B/")
-
+model = AutoModelForCausalLM.from_pretrained("model/Qwen3-8B/")
+tokenizer = AutoTokenizer.from_pretrained("model/Qwen3-8B")
 trainer = SFTTrainer(
     model=model,
     args=config,
@@ -88,4 +87,4 @@ trainer = SFTTrainer(
 trainer.train()
 
 
-trainer.save_model("./finetuned/04_trl_sft_demo")
+trainer.save_model("./finetuned/accelerate_demo")
