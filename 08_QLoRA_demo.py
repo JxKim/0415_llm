@@ -1,8 +1,47 @@
+from transformers import BitsAndBytesConfig
+import torch
+quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4", # 量化的类型，使用nf4量化
+    bnb_4bit_use_double_quant= False, # 是否开启双重量化，取决于被训练的模型大小
+    bnb_4bit_compute_dtype=torch.bfloat16 # 反量化之后的数据类型
+)
+
+from transformers import AutoModelForCausalLM
+quantized_model = AutoModelForCausalLM.from_pretrained("model/Qwen3-8B/",quantization_config = quantization_config)
+
+
+from peft import LoraConfig
+
+lora_config = LoraConfig(
+    r=8,
+    lora_alpha=8,
+    target_modules="all-linear",
+    lora_dropout=0.05,
+    task_type="CAUSAL_LM"
+)
+
+from peft import prepare_model_for_kbit_training, get_peft_model
+
+
+# 1、将传入的模型当中，参数全部冻结：就是将参数的requires_grad置为False
+# 2、将传入的模型当中，部分参数，置为更高的精度,fp32: 将输入的embedding和输出的lm_head，转成fp32的精度
+
+prepared_quantized_model = prepare_model_for_kbit_training(quantized_model)
+
+
+quantized_peft_model = get_peft_model(prepared_quantized_model,lora_config)
+
+
+
+
 from datasets import load_dataset
 # 1.1 加载数据
-data = load_dataset("json",data_files={"train":"./data/keywords_data_train.jsonl","test":"./data/keywords_data_test.jsonl"})
+data = load_dataset("json",data_files={"train":"./data/psychology_data.jsonl"})
 data["train"]=data["train"].shuffle()
 data["train"]=data["train"].select(range(16000))
+data = data["train"].train_test_split(test_size=0.05)
+
 # 1.2 将数据转换成SFTTrainer所需要的 Language Modeling 这种类型，对话格式的数据
 def convert_func(examples:dict[str, list]):
     """
@@ -29,12 +68,12 @@ converted_data = data.map(convert_func,batched=True,remove_columns=data["train"]
 
 from trl.trainer.sft_config import SFTConfig
 import os
-os.environ["TENSORBOARD_LOGGING_DIR"] = "./logs/05_trl_peft_demo"
+os.environ["TENSORBOARD_LOGGING_DIR"] = "./logs/08_QLoRA_demo"
 config = SFTConfig(
     # 数据规模相关的
-    per_device_train_batch_size=1,
+    per_device_train_batch_size=4,
     per_device_eval_batch_size=4,
-    gradient_accumulation_steps= 32,
+    gradient_accumulation_steps= 8,
     max_steps=500,
     # num_train_epochs= # max_steps会比num_train_epochs的优先级更高
     # 训练可视化相关
@@ -46,7 +85,7 @@ config = SFTConfig(
     learning_rate=3e-4,
     lr_scheduler_type="cosine",
     warmup_steps= 0.1,
-    # optim="" 优化器的类型，默认值就是adamW
+    optim="paged_adamw_32bit" ,# 优化器的类型，默认值就是adamW，可以选择QLoRA当中的分页优化器：paged_adamw_32bit
     # 评估和保存相关
     eval_strategy="steps",
     eval_steps=50,
@@ -56,7 +95,7 @@ config = SFTConfig(
     save_strategy="steps",
     save_steps=50,
     save_total_limit=3,
-    output_dir="./finetuned/05_trl_peft_demo", # 保存的是检查点
+    output_dir="./finetuned/08_QLoRA_demo", # 保存的是检查点
     bf16=True,
     gradient_checkpointing=False,
     activation_offloading=False,
@@ -67,31 +106,12 @@ config = SFTConfig(
     chat_template_path="./new_chat_template.jinja"
 )
 
-from peft import LoraConfig, get_peft_model
-from transformers import AutoModelForCausalLM
-origin_model = AutoModelForCausalLM.from_pretrained("./model/Qwen3-0.6B/")
-model = AutoModelForCausalLM.from_pretrained("./model/Qwen3-0.6B/")
-lora_config = LoraConfig(
-    r=8,
-    lora_alpha=8,
-    # target_modules=["q_proj","v_proj"]
-    # target_modules=["q_proj","k_proj","v_proj"]
-    target_modules="all-linear", # 表示的就是在attention和FFN当中的所有参数矩阵，插入LoRA,
-    lora_dropout=0.05,
-    task_type="CAUSAL_LM"
-)
-
-peft_model = get_peft_model(model,lora_config)
-
-
-
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import  AutoTokenizer
 from trl.trainer.sft_trainer import SFTTrainer
-from tyro import conf
-tokenizer = AutoTokenizer.from_pretrained("model/Qwen3-0.6B")
+tokenizer = AutoTokenizer.from_pretrained("model/Qwen3-8B")
 
 trainer = SFTTrainer(
-    model=peft_model, # 此处传递的，不再是原模型，而是通过get_peft_model所得到的新模型
+    model=quantized_peft_model, # 此处传递的，不再是原模型，而是通过get_peft_model所得到的新模型
     args=config,
     train_dataset=converted_data["train"],
     eval_dataset=converted_data["test"],
@@ -101,4 +121,4 @@ trainer = SFTTrainer(
 
 
 trainer.train()
-trainer.save_model("./finetuned/05_trl_peft_demo")
+trainer.save_model("./finetuned/08_QLoRA_demo")
