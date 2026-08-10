@@ -308,3 +308,183 @@ zero-stage-1
 4、Unsloth库，了解，，尝试去使用unsloth训一下，测试一下：🌟🌟
 5、accelerate，分布式训练，了解一下，测试一下：🌟🌟
 6、llama factory库，了解一下，测试一下：🌟🌟
+
+
+
+2026-08-10：
+1、LLM的部署：
+	1.1 vLLM的概述，使用vLLM部署模型：单机单卡部署，单机多卡部署
+	1.2 vLLM部署框架，底层两大核心原理，paged attention,连续批处理
+
+2、evalscope框架的使用
+	2.1 做压测
+	2.2 做模型的评估
+
+
+
+vllm serve /root/autodl-tmp/models/Qwen3-8B-sft-all --served-model-name Qwen3-8B-sft-all --max-model-len 32K –-gpu-memory-utilization 0.92
+
+
+curl http://localhost:8000/v1/chat/completions \
+-H "Content-Type: application/json" \
+-d '{
+	"model": "Qwen3-8B",
+	"messages": [
+		{"role": "system", "content": "你是个乐于助人的助理。"},
+		{"role": "user", "content": "什么是langchain，它的作用是什么？"}
+	]
+}'
+
+
+vllm serve ./model/Qwen3-8B --served-model-name Qwen3-8B --max-model-len 32K --tensor-parallel-size 2
+
+
+vllm serve ./model/Qwen3-30B-A3B --served-model-name Qwen3-30B-A3B --max-model-len 32K --tensor-parallel-size 2 --enable-expert-parallel
+
+
+
+
+问题一：当多个生成请求同时到来时，如何高效调度推理任务，保证服务稳定运行？
+
+能否通过原生的model.generate去解决？
+
+app = FastAPI()
+
+
+
+@app.post("/chat/completions")
+async def handle_request(message_list, model_name):
+	model = AutoModelForCausalLM.from_pretrained(model_name)
+	response = model.generate(message_list)
+
+	return response 
+
+
+这种方式存在的问题：没有充分利用GPU的并行计算能力
+
+
+问题二：在长上下文与高并发场景下，如何更高效地管理显存，尤其是 KV Cache？
+
+
+原先在01_Qwen3.py代码中，所实现KVCache的管理，
+问题一：在高并发场景下，KVCache所需要的显存空间，是不断增长的，从而会导致推理服务，有很大的风险，因为OOM而停止。
+问题二：在长上下文场景下，01_Qwen3.py当中的KVCache的管理方式，需要一片的显存空间，去存放，KVCache，这样会导致整个系统，即便存在某些不连续的显存空间，从大小上面加起来能够存放这部分上下文的kvcache，但是因为不连续，所以需要再额外申请空间，去存储，继而导致显存利用率大大降低。
+
+
+
+
+
+BlockManager 分配Block的方式：
+
+假设当前有一个新的请求，来到vLLM:
+
+1. 先使用tokenizer，对这个请求的message_list，使用chat template，做分词，得到token_ids列表：
+[231,84,344,876,567]
+
+2. 可以基于该token_ids列表，分块，假设每个块，存储两个token的kvcache，此时，可以将该token_ids列表，分3个Block: Block0:[231,84], Block1:[344,876] Block2:[567,]，该序列，会记住，被分到的Block的id是什么，记录到block_tables
+
+3. attention运算：根据block_tables，将生成的kv写到对应的块当中去。
+
+4.decode阶段，生成新的token，如果当前分配给这个序列的 blocks不够，该序列再向 Block Manger去申请的块，就可以了。
+
+5.如果该序列，生成完成了，序列会向BlockManger申请释放块，是否释放，是由Block Manager所决定的，BlockManager会查看，当前序列所引用的block，是否被其他序列正在引用，没有被其他序列引用的block，能够释放，如果block，还在被其他正在生成的序列引用，就不能释放。
+
+
+基于PagedAttention这种算法，能够实现：
+前缀缓存：prefix-caching
+
+场景一：
+用户和Agent进行多轮对话：
+
+第一轮：
+	输入：[{"role":"user","content":"你好！"}]
+	输出：[{"role":"user","content":"你好！"},{"role":"assistant","content":"你也好！"}]
+
+第二轮：
+	输入：[{"role":"user","content":"你好！"},{"role":"assistant","content":"你也好！"},{"role":"user","content":"你能帮我做xxx吗？"}]
+
+	vllm，接收到请求后，同样是会做分词，这个时候，分词所得的token_ids序列，和第一轮输出的，token_ids序列相比，是包含了第一轮输出的结果的token_ids，对于第一轮输出的这部分token_ids，不需要再额外分配block，可以直接使用第一轮输出时，系统已经存在的block
+
+
+场景二：
+多个不同的用户，使用同一个Agent，多个用户之间，共享一个System Message:
+
+
+第一个用户：
+	输入：[system_message,user_message_1]
+	vllm会给这个message_list，分配block，假设ssystem_message分配了两个block: block0和block1
+	user_message_1分配了两个block: block2和block3
+
+	输出:xxxx
+
+第二个用户：
+	输入：[system_message,user_message_2]
+	vllm不会再对system_message，分配新的Block，而是去复用block0和block1，只需要单独分配user_message_2所对应的block就可以了。
+
+
+场景三：
+
+第一个用户：
+	输入：[user_message_1，system_message]
+	vllm会给这个message_list，分配block，假设user_message_1分配了两个block: block0和block1
+	system_message分配了两个block: block2和block3
+
+
+第二个用户：
+	输入：[user_message_2，system_message]
+
+	vllm能否去复用用户一的system message所对应的block2和block3?
+
+	能否复用，取决于这两个system_message，所对应的token_ids的k和v是否一样
+
+	结果：不能复用，因为它们的kv是完全不一样的
+
+
+是否一样：
+	k向量和v向量的计算方式：token的hidden_state * q_proj / hidden_state * v_proj
+
+
+
+
+	Transformer Block的第一层输入：
+		system_message的token_id为：[23,45,87,879]
+
+		两个序列，这4个token在第一层的隐藏状态，是一模一样的，都是token_embedding的结果
+
+	Transformer Block的第二层输入：
+
+		两个序列，这4个token的隐藏状态就已经不一样了，基于隐藏状态，算得的k和v这两个向量，两个序列就已经不一样了
+
+
+system message的错误构建方式，将变量放在前面，从而使得每次调用，无法复用后面token的kvcache：
+	当前时间：{now}。你是一个智能助手，你的职责是xxx
+
+
+system message的正确方式：
+	将对所有用户相同的system message放在最前面，将时间、用户ID等变量，放在最后
+
+
+
+
+
+vllm serve ./model/Qwen3-8B --served-model-name Qwen3-8B --max-model-len 32K
+
+
+evalscope perf \
+--url "http://127.0.0.1:8000/v1/chat/completions" \
+--parallel 5 20 50 100 \
+--model Qwen3-8B \
+--number 20 200 400 800 \
+--api openai \
+--dataset openqa \
+--stream
+
+
+
+
+
+2026-08-10:
+1、vLLM的概述，使用vLLM做模型部署，需要尝试，下载Qwen3-8B的模型，使用5090做模型的部署和调用 🌟🌟🌟
+2、paged attention和调度器以及连续批处理，核心原理需要搞清楚：🌟🌟🌟
+3、evalscope压测，怎么做，压测的指标，有哪些，可以分为哪两类：🌟🌟🌟🌟🌟
+4、evalscope做评估，怎么自建评估数据集，基于LLM作为裁判，来评估模型的能力：🌟🌟🌟🌟🌟
