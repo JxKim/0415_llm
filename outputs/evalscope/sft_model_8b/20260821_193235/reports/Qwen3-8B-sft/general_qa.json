@@ -1,0 +1,49 @@
+{
+    "name": "Qwen3-8B-sft@general_qa",
+    "dataset_name": "general_qa",
+    "dataset_pretty_name": "General-QA",
+    "dataset_description": "\n## Overview\n\nGeneral-QA is a customizable question answering benchmark for evaluating language models on open-ended text generation tasks. It supports flexible data formats and configurable evaluation metrics.\n\n## Task Description\n\n- **Task Type**: Open-Ended Question Answering\n- **Input**: Question (with optional system prompt and conversation history)\n- **Output**: Free-form text answer\n- **Flexibility**: Supports custom datasets via local files\n\n## Key Features\n\n- Flexible input format (query/answer or messages format)\n- Optional system prompt support\n- BLEU and Rouge evaluation metrics\n- Custom dataset support via local file loading\n- Extensible for various QA use cases\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Default metrics: **BLEU**, **Rouge** (Rouge-L-R as main score)\n- Evaluates on **test** split\n- See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa) for dataset format\n",
+    "model_name": "Qwen3-8B-sft",
+    "score": 0.7714,
+    "metrics": [
+        {
+            "name": "mean_acc",
+            "num": 199,
+            "score": 0.7714,
+            "macro_score": 0.7714,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 199,
+                    "score": 0.7714,
+                    "macro_score": 0.771,
+                    "subsets": [
+                        {
+                            "name": "category1_knowledge_qa",
+                            "score": 0.7756,
+                            "num": 50
+                        },
+                        {
+                            "name": "category2_diagnosis",
+                            "score": 0.7266,
+                            "num": 50
+                        },
+                        {
+                            "name": "category3_scripts",
+                            "score": 0.7002,
+                            "num": 49
+                        },
+                        {
+                            "name": "category4_complaints",
+                            "score": 0.8816,
+                            "num": 50
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A"
+}

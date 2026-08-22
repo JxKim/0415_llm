@@ -1,0 +1,2162 @@
+﻿
+尚硅谷大模型技术之LLM
+（作者：尚硅谷研究院）
+
+版本：V1.3.1
+LLM概述
+LLM（Large Language Model，大语言模型）是指在海量无标注文本数据上进行预训练得到的大型语言模型。通过学习大规模语料中的语言规律，模型能够理解、生成和推理自然语言文本。典型代表包括 GPT 系列、DeepSeek系列、Qwen 系列等。
+大语言模型的“大”主要体现在三个方面：一是参数量大，模型通常拥有数十亿到上万亿个参数；二是预训练数据量大，涵盖多语言、多领域的庞大语料；三是能力强大，具备跨任务的泛化与生成能力，能够在问答、摘要、翻译、编程等多种场景下展现出类似人类的语言理解和表达水平。
+LLM发展历程
+GPT系列的发展演化
+概述
+2022 年 11 月底，OpenAI 推出了基于大语言模型的在线对话系统——ChatGPT。凭借卓越的自然语言理解与生成能力，ChatGPT 迅速成为人工智能领域的里程碑式成果，掀起了全球范围内关于大语言模型的研究与应用热潮。
+
+ChatGPT 的成功并非偶然，而是 OpenAI 在大规模语言建模领域长期积累与持续迭代的结果。自 2018 年 GPT-1 发布以来，GPT 系列模型在 模型规模、训练数据、网络架构以及训练范式 等方面持续演进，不断推动语言模型的能力上限。
+这一系列技术突破不仅奠定了 ChatGPT 的基础，也标志着大语言模型从学术研究阶段迈向实际应用阶段的关键转折。系统回顾 GPT 系列的发展演化，对于深入理解大语言模型的技术路径与能力形成机制具有重要意义。
+GPT-1
+概述
+GPT-1（Generative Pre-trained Transformer-1）是 OpenAI 于 2018 年 6 月 发布的首个生成式预训练语言模型，其研究成果发表于论文《Improving Language Understanding by Generative Pre-Training》。
+GPT-1 系统化地验证并推广了“预训练（Pre-training）+ 微调（Fine-tuning）”的训练范式：模型先在大规模无标注语料上进行语言建模预训练，再利用少量有监督数据在特定任务上微调。该方法显著提升了模型的迁移能力，使单一预训练模型能够适配多种自然语言任务。
+架构
+总体结构
+GPT-1 采用了 Transformer Decoder-only 结构，也就是说只保留了 Transformer 模型的解码器（Decoder）部分，并在此基础上进行了适配性调整。
+具体结构如下图所示，整个模型可分为输入层、Transformer Block层与输出层三个部分： 
+
+输入层（Text & Position Embedding）
+将文本序列映射为词向量，并加入位置嵌入，用于表示词序信息。
+Transformer Block
+每个Transformer Block包含 Masked Multi-Head Self-Attention 和 Feed Forward Network 两个核心子层，并通过 LayerNorm 与残差连接保持稳定的梯度传播。
+输出层
+Text Prediction用于在预训练阶段输出下一个词的概率分布；Task Classifier用于在微调阶段适配下游任务。
+架构创新
+Decoder-only 结构
+从 Encoder-Decoder 架构简化为Decoder-only 结构，以适配自回归生成任务。
+可学习位置嵌入
+使用可学习位置嵌入，取代正弦位置编码，使模型能够在训练过程中自适应地学习词序关系。
+权重共享机制
+输入嵌入层与输出词表权重共享，减少参数量并提升训练稳定性。
+主要参数
+参数项
+	数值
+	
+模型层数（Layers）
+	12
+	
+隐藏维度（Hidden Size）
+	768
+	
+注意力头数（Attention Heads）
+	12
+	
+前馈层维度（FFN Size）
+	3072
+	
+参数总量
+	1.17 亿
+	
+训练
+GPT-1 的训练采用了“预训练（Pre-training） + 微调（Fine-tuning）”的两阶段范式。
+预训练阶段
+在预训练阶段（Pre-training），使用高质量英文语料 BooksCorpus（约 7,000 本小说，约 8 亿词）作为训练数据，以“给定前文预测下一个词（Next-Token Prediction）”为目标，在长篇连续文本中捕捉句法结构、词汇共现和语义依赖等特征，从而获得通用的语言建模能力。这一阶段让模型具备了理解与生成自然语言的基础能力。
+微调阶段
+在微调阶段（Fine-tuning），通过在模型顶部加入轻量的任务分类层（Task Classifier），并在少量标注数据上进行有监督训练，模型能够快速适应不同任务场景。结果表明，微调后的 GPT-1 在多个 NLP 任务上显著优于从零训练的传统模型，验证了“预训练—微调”范式的有效性与通用性。
+能力
+尽管规模有限，GPT-1 已在自然语言理解与生成任务上展现出突破性成果。
+在理解任务中，GPT-1 经过微调后在文本蕴含（NLI）、问答（QA）、语义相似度（STS）等多个基准测试中显著优于传统监督模型，证明了“预训练—微调”范式的有效性。
+在生成任务中，GPT-1 能根据上下文生成语法合理、语义连贯的短文本，初步展现出 Transformer 架构在语言生成方面的潜力。
+总体而言，GPT-1 的意义不在性能，而在范式：它首次验证了 Decoder-only 架构 与 预训练—微调模式的有效性，为后续 GPT 系列和整个大语言模型时代奠定了方法论基础。
+GPT-2
+概述
+GPT-2是 OpenAI 于 2019 年发布的第二代生成式预训练语言模型，相关研究发表于论文《Language Models are Unsupervised Multitask Learners》。
+GPT-2 延续了GPT-1的 Transformer Decoder-only 架构，但参数规模提升了10倍。
+GPT-2 首次证明了大型语言模型具备零样本（Zero-shot）任务泛化能力。模型无需任何下游任务微调，仅凭自然语言提示（Prompt）即可完成问答、翻译、摘要等任务，标志着语言模型开始具备跨任务的通用智能特征。
+问答任务示例
+	
+	
+翻译任务示例
+	
+	
+此外，GPT-2 的实验系统揭示了显著的规模效应（Scaling Effect）：随着模型参数与数据规模的增长，模型性能在多种任务上持续提升。这一发现奠定了后续超大规模模型（如 GPT-3 与 ChatGPT）的发展基础。
+
+架构
+总体架构
+GPT-2 延续了 GPT-1 的 Transformer Decoder-only 架构。
+架构创新
+规模扩展
+参数量相比 GPT-1 提升约十倍，最大模型达到 15.42 亿参数
+LayerNorm
+采用Pre-LayerNorm，缓解大模型训练中梯度不稳定问题。
+
+主要参数
+参数项
+	数值
+	
+模型层数（Layers）
+	48
+	
+隐藏维度（Hidden Size）
+	1600
+	
+注意力头数（Attention Heads）
+	25
+	
+前馈层维度（FFN Size）
+	6400
+	
+参数总量
+	15.42亿
+	
+训练
+GPT-2 的训练仍采用 自回归语言建模（Autoregressive Language Modeling） 目标，即在给定前文的条件下预测下一个词（Next Token Prediction），以学习文本的语法与语义规律。模型使用了 OpenAI 构建的 WebText 数据集，规模约 40GB，包含约 800 万篇网页内容，涵盖新闻、小说、科技、娱乐、社交等多个领域，为模型提供了更广泛的语言风格与知识来源。
+能力
+GPT-2 的能力主要体现在两个方面：文本生成达到当时最优水平（SOTA），以及展现出早期的零样本（Zero-Shot）泛化能力。
+在文本生成方面，GPT-2 能生成语法正确、语义连贯、上下文一致的长文本，语言自然流畅，几乎可以与人类创作相媲美。模型在多项语言建模基准测试中表现突出，在 8 个公开评测任务中有 7 个取得当时的最优成绩，全面刷新了语言模型在文本生成领域的性能上限。
+在任务泛化方面，GPT-2 首次展现出零样本学习能力。模型无需针对特定任务进行微调，仅通过自然语言提示（Prompt）即可完成翻译、问答、摘要等多种任务，体现出初步的通用语言理解与迁移能力。但这种能力仍不稳定，在复杂推理和结构化任务中，与经过监督微调的专用模型相比仍存在明显差距。
+GPT-3
+概述
+GPT-3是 OpenAI 于 2020 年 5 月发布的第三代生成式预训练语言模型，研究成果发表于论文《HYPERLINK "https://arxiv.org/pdf/2005.14165"Language Models are Few-Shot Learners》。
+GPT-3 延续了 Transformer Decoder-only 架构，但参数规模较 GPT-2 提升约百倍，达到了1750亿。
+GPT-3 的核心创新在于首次系统提出并验证了“上下文学习（In-Context Learning）” 的概念：模型在使用阶段无需额外训练，仅依靠输入文本中的任务描述及少量示例即可理解并完成任务，如下图所示。
+
+GPT-3 的成功展示了大规模预训练模型在能力上的显著扩展，为后续更高层次的语言智能研究奠定了重要基础。
+架构
+总体结构
+GPT-3 延续了 Transformer Decoder-only 架构。
+架构创新
+架构方面，与 GPT-2 相比，GPT-3 的主要区别在于在各个 Transformer Block 中交替使用稠密注意力（Dense Attention）和局部带状稀疏注意力（Locally Banded Sparse Attention）模式。
+局部带状稀疏注意力是一种仅在局部窗口内计算注意力权重的稀疏化机制，能够显著降低时间和空间复杂度。通过稠密与稀疏注意力的交替使用，GPT-3 能够兼顾全局信息和计算效率。 
+
+主要参数
+参数项
+	数值
+	
+模型层数（Layers）
+	96
+	
+隐藏维度（Hidden Size）
+	12288
+	
+注意力头数（Attention Heads）
+	96
+	
+前馈层维度（FFN Size）
+	49152
+	
+参数总量
+	1750 亿
+	
+训练
+GPT-3 依旧采用 自回归语言建模（Autoregressive Language Modeling） 方式进行训练。训练数据约 570GB，包含约3000亿token，覆盖新闻、百科、文学与学术等领域。
+模型在数千块 NVIDIA V100 GPU 上进行分布式并行训练，耗时数周完成。
+能力
+GPT-3 在规模与训练深度上的突破，使其在语言理解与生成方面展现出前所未有的能力。
+（1）语言生成能力
+GPT-3 能生成 语法正确、语义连贯、风格自然 的长文本，常常难以与人类写作区分。
+（2）上下文学习
+模型无需微调，仅通过输入任务描述和少量示例，即可理解任务意图并生成正确输出。在一些测试中，GPT-3的表现接近甚至超过部分微调过的专用模型。
+InstructGPT
+概述
+InstructGPT 是 OpenAI 于 2022 年初推出的生成式预训练语言模型，是 GPT-3 的改进版本，也是后续 ChatGPT 的直接前身。其研究成果发表于论文《HYPERLINK "https://arxiv.org/pdf/2203.02155"Training language models to follow instructions with human feedback》。
+GPT-3 在自然语言生成方面取得了突破性进展，能够通过精心设计的提示词（Prompt）完成多种任务，但其生成结果并非总能令人满意，常常与用户的真实需求存在偏差，甚至会产生一些不真实、有害或无用的内容。
+其根本原因在于，GPT-3 的训练目标仅是在大规模互联网文本上预测下一个单词，模型学习到的是语言的统计规律，而非如何理解和执行人类指令。换言之，模型尚未与人类意图保持一致（Alignment，对齐）。
+为解决这一问题，InstructGPT 在 GPT-3 基础上引入指令对齐训练，从而使模型能够更准确地理解并执行人类指令。
+架构
+总体结构
+InstructGPT延续了GPT-3的架构。
+架构创新
+InstructGPT并未在网络结构上进行新的改动。其主要创新点不在于模型设计，而在于训练范式的变革。
+主要参数
+参数项
+	数值
+	
+模型层数（Layers）
+	96
+	
+隐藏维度（Hidden Size）
+	12288
+	
+注意力头数（Attention Heads）
+	96
+	
+前馈层维度（FFN Size）
+	49152
+	
+参数总量
+	1750 亿
+	
+训练
+InstructGPT 的训练以GPT-3的预训练语言模型为基础，进一步采用了三阶段训练范式，具体步骤如下图所示：
+
+监督微调（Supervised Fine-tuning, SFT）
+在第一阶段，OpenAI 收集了由人工标注者撰写的高质量 “指令-回答” 样本，组成训练数据集。这些样本覆盖常见的用户指令及对应的理想响应，具有较高的语言质量。
+在训练过程中，模型在这些“指令-回答”对上进行监督微调，训练目标仍为“给定前文预测下一个词”（Next Token Prediction）。
+
+通过该阶段，模型初步具备了理解并执行自然语言指令的能力，能够较好地完成指令驱动的任务响应。
+奖励模型（Reward Model, RM）
+第二阶段构建奖励模型，用于后续强化学习过程中的反馈评估器。
+操作流程如下：
+使用经过 SFT 微调后的模型，针对同一条指令生成多个候选回答；
+人工标注者根据回答的质量、相关性、礼貌性、有用性等维度，对这些回答进行排序；
+利用排序结果训练一个奖励模型，使其能够为任意给定回答输出一个偏好评分。
+奖励模型的核心目标是模仿人类的偏好判断，为语言模型的输出提供方向性反馈。
+强化学习（Reinforcement Learning from Human Feedback, RLHF）
+这一阶段的核心目标是：通过人类偏好引导模型输出更加符合人类意图的回答。它以第二阶段训练好的奖励模型为评分工具，使用强化学习算法（PPO），对第一步经过SFT微调的语言模型进行进一步优化。
+具体步骤如下：
+指令输入
+从预构建的指令数据集中选取一条指令，作为模型输入。
+模型生成回答
+使用经过SFT微调的模型对指令生成回答。
+奖励模型评分
+使用奖励模型对生成的回答进行打分。
+强化学习优化
+模型根据奖励模型打分的结果，调整自身参数，使其更倾向于生成高分回答。优化过程中使用了强化学习算法 PPO（Proximal Policy Optimization），目标是最大化奖励模型的评分。
+经过这一阶段的训练，模型能够更准确地理解人类指令，并生成更符合人类偏好、更加真实、有用且安全的回答，从而显著提升了语言模型在实际应用中的表现能力。
+能力
+经过人类反馈强化学习（RLHF）阶段的训练，InstructGPT 相较于原始的 GPT-3，在多个维度上表现出更优的能力，主要体现在以下几个方面：
+指令理解能力增强
+InstructGPT 能够更准确地识别和执行自然语言中的任务指令，不再依赖复杂或特殊的提示设计，显著提升了模型对普通用户输入的响应能力。
+输出质量更贴合人类偏好
+得益于人类反馈训练，模型生成的回答在有用性、真实性、礼貌性和安全性等方面表现更好。实验结果表明，大多数用户更倾向于 InstructGPT 的回答，而非原始 GPT-3 所生成的内容。
+无关、虚假或有害内容减少
+InstructGPT 在生成过程中更容易规避与事实不符的内容、逻辑混乱的输出或潜在有害信息，提升了模型输出的稳健性与安全性。
+泛化能力保持优秀
+尽管进行了额外的指令对齐训练，InstructGPT 依然保持了 GPT-3 在多任务、多领域上的强泛化能力，能适应问答、写作、摘要、推理等多种场景。
+以下是一些InstructGPT和GPT-3的输出对比示例：HYPERLINK "https://openai.com/zh-Hans-CN/index/instruction-following/"https://openai.com/zh-Hans-CN/index/instruction-following/ 。
+ChatGPT
+概述
+ChatGPT 是 OpenAI 于 2022 年 11 月发布的一种具备对话能力的大型语言模型。它支持连续的自然语言交互，能够回答后续问题、承认错误、质疑用户前提、拒绝不当请求，在用户体验与安全性方面取得显著改进。
+架构
+ChatGPT 是与 InstructGPT 同一技术路线下的兄弟模型，架构设计与 InstructGPT 类似，但具体细节未公开。
+训练
+ChatGPT 的训练方法采用与 InstructGPT 相同的人类反馈强化学习（RLHF）策略，其核心区别在于数据集的设计与处理方式。
+ChatGPT 使用了特别构建的对话格式数据集。这些数据由标注人员通过模拟用户与 AI 助手的对话生成，内容更加贴近真实交互场景。相比 InstructGPT 所使用的“指令-单轮回答”数据，ChatGPT 所采用的数据具有多轮对话结构，强调上下文保持与连续问答能力。
+
+此外，原有 InstructGPT 的数据也被统一转换为对话格式，与新收集的数据集成混合使用，以增强模型的对话泛化能力。整体数据处理流程重点在于适配对话场景，提升模型的多轮交互表现。
+
+能力
+ChatGPT 具备以下关键能力：
+连贯对话：能理解上下文并进行多轮交互；
+错误应对：可承认自身错误并尝试修正；
+逻辑判断：能够识别并质疑错误前提；
+安全防护：对不当请求具备拒绝能力。
+这些能力使 ChatGPT 在任务执行、语言理解和用户交互方面均展现出较强的综合表现。
+总结
+GPT 系列的发展推动了现代大语言模型训练范式的逐步成熟，形成了以 “预训练—监督微调—对齐” 为核心的三阶段开发框架。如下：
+预训练（Pre-training）
+基于超大规模无标注语料进行自监督学习，使模型获得通用语言建模能力、广泛的世界知识以及基本的推理与泛化能力。
+监督微调（Supervised Fine-tuning, SFT）
+利用人工构建的指令—响应示例或高质量对话数据对模型进行进一步训练，使其能够更好地理解指令，并输出更加规范、稳定且贴合任务需求的内容。
+对齐（Alignment）
+通过引入人类偏好、行为规范、安全约束与价值观等因素，使模型的行为更符合用户期望。对齐方式包括RLHF（奖励模型 + 强化学习）以及DPO、ORPO、KTO 等无需强化学习的偏好优化方法。对齐阶段的目标是让模型在真实应用场景中表现得更有帮助、更安全、更可靠。
+这一“三阶段”开发范式在实践中得到广泛验证，已成为业界主流的大语言模型训练框架。
+全球主流LLM体系纵览
+概述
+自ChatGPT 问世以来，全球大语言模型快速进入爆发期，各种模型体系相继涌现，形成了多路线并行发展的“百花齐放”格局。不同模型在推理能力、多模态融合、中文理解、长文本处理、开源生态与成本效率等方面各具特色，共同推动了 LLM 技术的持续演进。
+主流LLM体系
+主流的LLM体系如下表所示：
+模型体系
+	公司/机构
+	开放策略
+	
+GPT 系列
+	OpenAI
+	闭源，主要通过API 接口提供商业服务。
+	
+Gemini 系列
+	Google DeepMind
+	核心模型闭源，但开放部分模型如 Gemma 系列，同时提供强大的 API 服务。
+	
+Claude 系列
+	Anthropic
+	闭源，主要通过 API 接口提供商业服务。
+	
+Grok 系列
+	x AI
+	核心模型闭源，部分模型已开源，要通过 API 接口提供商业服务。
+	
+DeepSeek 系列
+	DeepSeek
+	开源，提供模型权重和代码，并同时提供 API 接口服务。
+	
+Qwen 系列
+	阿里巴巴
+	开源，提供绝大部分模型权重和代码，并同时提供 API 接口服务。
+	
+Kimi
+	Moonshot AI
+	闭源，通过 API 接口提供服务。
+	
+GLM 系列 
+	智谱 AI
+	核心模型闭源，部分版本已开源，同时提供 API 服务。
+	
+MiniMax 系列
+	MinimaxAI
+	开源，提供模型权重和代码。 
+	
+常用LLM 榜单
+LMArena
+LMArena 是由加州大学伯克利分校团队创建的一个开放平台，用户可以方便地体验并对比各类主流大模型。平台通过让用户对模型回答进行投票，形成公开排行榜，让大模型能力的差异和进步更加直观、透明，也更贴近真实使用场景。作为一种群众驱动的评测机制，LMArena 已成为当前了解前沿大模型表现的重要参考平台之一。
+网址：https://lmarena.ai/leaderboard
+司南
+司南是中国国内由上海人工智能实验室发起的“大模型评测体系”，旨在为大语言模型、多模态模型等提供全栈、可复现、开放的评测工具、基准与榜单。
+网址：https://opencompass.org.cn/home
+LLM架构
+LLM基础架构
+大型语言模型（LLM）大多基于 Transformer 架构构建，其中最常见的是 Decoder-only 架构。这一架构最早由 GPT 系列采用，并逐渐成为当前大多数主流模型的标准设计。LLM 的核心能力——理解语言、建模上下文、生成文本，都源于 Transformer 的模块化结构与高度可扩展性。
+从整体上看，一个典型的 LLM 可以分为 输入层、Transformer Block 堆叠层和输出层 三个部分，如下所述。
+
+输入层
+输入层负责将原始文本序列转化为模型可处理的向量表示。文本首先经过分词处理，每个 token 会被映射为对应的词向量（Token Embedding），形成模型的基础语义空间。为了使模型能够感知序列顺序，还需要加入位置编码（Position Encoding）（注意：在早期的正余弦位置编码当中，是在输入层添加位置编码。后面的旋转位置编码当中，则是在Transformer Block当中添加位置信息）。输入层的作用是为后续 Transformer Block 提供初始的语义信息。
+Transformer Block
+Transformer Block 是大型语言模型的核心计算单元，通常由几十到上百层堆叠而成。每个 Block 内部主要包含自注意力机制和前馈网络两部分：自注意力机制使模型能够在处理当前 token 时参考序列中其他位置的语义信息，从而捕捉长距离依赖关系；前馈网络则对注意力输出进行非线性变换，提高模型的表达能力。
+为了确保深层结构的训练稳定性，Transformer Block 内部普遍采用残差连接与归一化技术，使梯度能够顺畅传播。大量堆叠的 Block 共同构成了 LLM 的主体结构，是模型理解语言和推理能力的来源。
+输出层
+输出层用于将 Transformer Block 最终生成的隐含向量映射为词表中的概率分布，从而执行下一个 token 的预测。典型做法是使用一个线性投影层lm_head将向量映射到词表维度，并通过 Softmax 得到每个 token 的概率。在参数量较小的模型（例如Qwen3-0.6B, Qwen3-1.7B）中，为了减少整体参数量，还会将输入层中token_embedding和输出层lm_head进行权重共享。
+输出层的结果被用于自回归生成，每次输出一个 token 并将其作为下一步的输入，使模型能够逐步生成连贯自然的文本。
+LLM架构演进
+概述
+自 ChatGPT 问世以来，各类大语言模型不断涌现，但其主体架构仍然基于 Transformer 的解码器，整体结构并未发生革命性变化。
+模型真正的演进主要体现在内部组件层面，包括注意力机制、前馈网络、归一化与残差结构以及位置编码等模块的持续改进。
+下面介绍各个组件的改进方向。
+位置编码
+概述
+由于 Transformer 的自注意力机制（Self-Attention）并不包含序列顺序信息，模型无法仅依靠注意力计算来判断 token 在序列中的相对位置。因此，需要向输入中显式加入位置编码（Position Encoding），以补充序列的位置信息。
+随着模型规模扩大与任务需求多样化，位置编码的设计也在不断演进，以适应更长的上下文、更灵活的序列建模方式以及更稳定的训练特性。
+正余弦位置编码
+概述
+正余弦位置编码（Sinusoidal Positional Encoding）是原始Transformer 中采用的位置编码方式，它通过一组预定义的正弦与余弦函数为每个序列位置生成唯一向量：
+PE(pos,2i)=sin⁡(pos100002i/d)PE(pos,2i+1)=cos⁡(pos100002i/d)
+其中：
+pos：Token 的绝对位置
+i：维度对的索引
+d：总维度
+特点
+正余弦位置编码具有以下特点：
+无需训练
+编码由固定函数生成，不引入任何可学习参数，使用简单，不会随训练发生漂移。
+隐含相对位置信息
+正余弦位置编码的结构使其能够携带 token 之间的相对位置信息。
+正余弦位置编码的各维度是按频率成对排列的，每一对由同一频率对应的正弦值和余弦值组成。现在，我们分别从位置 m和位置 n的位置编码中，任意选取一对频率为 ω的维度进行观察。如下：
+PEω(m)=sin⁡(ωm)cos⁡(ωm)PEω(n)=sin⁡(ωn)cos⁡(ωn)
+在 Transformer 中，注意力权重由q向量与k向量的内积决定：
+AttentionScorem,n=qmknT
+因此，位置编码之间的内积会直接参与注意力打分。基于这一点，我们考察上述两组位置编码分量的内积：
+PEω(m)PEω(n)⊤=sin⁡(ωm)sin⁡(ωn)+cos⁡(ωm)cos⁡(ωn)
+利用三角恒等式可得：
+PEω(m)PEω(n)⊤=cos⁡(ω(m-n))
+可以看到，这一结果直接反映了位置 m与位置 n之间的相对位置关系，其他频率的维度也具备相同的形式。因此，可以认为，在采用正余弦位置编码的情况下，两个 token 的注意力评分中会包含相对位置信息。
+缺陷
+尽管正余弦位置编码具有良好的数学结构，其向量间的内积可直接反映相对位置关系，但在实际的 Transformer 注意力计算中，这种优势并不能完全有效发挥。
+注意力计算中，注意力打分为：
+score(m,n)=qmknT,
+其中
+qm=(em+PEm)WQ
+kn=(en+PEn)WK
+代入后可得：
+score(m,n)=(em+PEm)WQWK⊤(en+PEn)⊤
+令 A=WQWK⊤，可将上式展开为：
+score(m,n)=emAen⊤+emAPEn⊤+  PEmAen⊤+ PEmAPEn⊤
+其中，仅有最后一项 PEmAPEn⊤明确体现了位置编码之间的相互作用，因此也是唯一直接与相对位置相关的部分。但由于矩阵 A=WQWK⊤是可学习参数，会在训练中不断变化，原本正余弦编码所具备的几何结构难以稳定保持。换句话说，模型必须通过额外的学习来重新塑造或校正这种相对位置信息，而这种重建过程往往并不可靠，导致正余弦位置编码在理论上的优势无法在实践中完全体现出来，也影响了训练的稳定性和模型的泛化表现。
+可学习位置编码
+概述
+可学习位置编码（Learned Positional Embedding）是另一种常见的位置编码方式，曾广泛应用于早期的Transformer预训练模型（Bert，GPT-1/2等）中。在这种方法中，模型为序列中的每个位置分配一个独立的可训练向量，这些向量在训练过程中与模型的其他参数一同更新，使模型能够从实际任务数据中自动学习位置表示。
+特点
+可学习位置编码的主要特点如下：
+灵活性高
+位置向量完全由数据驱动学习，不受固定数学函数约束，因此能够更贴合训练语料的分布特点。
+训练方式简单
+其优化方式与词向量一致，实现成本低，不需要额外的结构设计，便于直接集成到 Transformer 中。
+缺陷
+可学习位置编码的缺陷如下：
+缺乏长度外推能力
+可学习位置编码只在训练过的位置范围内定义，超出最大序列长度的位置没有对应的嵌入，导致模型无法在推理阶段处理更长的输入序列。
+参数量随序列长度线性增长
+位置向量数量与最大序列长度成正比，当需要支持长上下文时，参数开销迅速增大。
+旋转位置编码
+概述
+旋转位置编码（Rotary Position Embedding，RoPE）由国内研究者HYPERLINK "https://spaces.ac.cn/"苏剑林提出。与传统将位置编码与词向量相加的方式不同，RoPE 直接作用于 q 和 k 向量本身，使注意力计算能够更好地体现 token 之间的相对位置关系。在实践中，RoPE 表现稳定，尤其适用于长序列建模，因此已成为当前 LLM 普遍采用的位置编码方案。
+原理
+RoPE 的设计目标是让注意力得分能够直接体现 token 之间的相对位置差。这一目标可以简化表示为：
+score(m,n)=func(qm,  kn,  m-n)
+即注意力评分仅依赖于第 m个位置的 query 向量 qm和第 n个位置的 key 向量 kn，以及两者之间的相对位置关系 m-n。
+为实现这一目标，RoPE 将 q 和 k 向量按维度两两分组，把每一对相邻维度视为一个二维子向量，并对每个二维子向量施加与位置及维度相关的旋转。如下图所示：
+
+例如，位置为 m的 token，其q和k向量的第 i 对二维子向量会旋转 m⋅θi的角度，θi的定义如下：
+θi=10000-2i/d
+其中d表示q和k向量的维度。
+下面以位置 m对位置 n的注意力评分为例，说明 RoPE 是如何实现其设计目标的。
+位置 m的 q 向量中的第 i对二维子向量 qm,i需要旋转 m⋅θi度，其旋转由如下二维旋转矩阵实现（推理过程见附录）：
+R(mθi)=cos⁡(mθi)sin⁡(mθi)-sin⁡(mθi)cos⁡(mθi)
+旋转后的子向量为：
+qm,i'=qm,iR(mθi) 
+位置 n的 k 向量中的第 i对二维子向量 kn,i需要旋转 n⋅θi度，其旋转矩阵为：
+R(nθi)=cos⁡(nθi)sin⁡(nθi)-sin⁡(nθi)cos⁡(nθi)
+旋转后的子向量为：
+kn,i'=kn,iR(nθi) 
+位置 m对位置 n的注意力评分中，第 i对二维子向量的贡献为：
+qm,i'(kn,i')⊤=(qm,iR(mθi))(kn,iR(nθi))⊤=qm,iR(mθi) R(nθi)⊤kn,i⊤
+二维旋转矩阵满足如下重要性质（推导过程见附录）：
+R(mθi) R(nθi)⊤=R((m-n)θi)
+因此，上式可化简为：
+qm,i'(kn,i')⊤=qm,i R((m-n)θi) kn,i⊤
+可以看到，第 i对二维子向量的注意力贡献仅依赖：
+qm,i,kn,i,(n-m)
+同理，对所有二维子向量求和后，即可得到完整的注意力得分满足：
+score(m,n)=func(qm,  kn,  m-n)
+这说明 RoPE 在数学结构上保证了注意力机制能够自然表达 token 之间的相对位置信息，从而实现其设计目标。
+特点
+显式编码相对位置信息
+旋转后注意力得分天然依赖 m-n，直接表达相对位置关系。
+零参数且训练稳定
+无需学习位置向量，结构固定，不随训练破坏几何性质。
+更容易外推
+数学结构不依赖训练长度，可在推理中处理更长序列。（注意：如果推理文本长度和训练文本长度之间仍然有较大的差距，仍然会存在推理时的外推问题）。
+Attention
+概述
+注意力机制（Attention）是 Transformer 中最核心的模块，用于刻画序列中不同位置之间的依赖关系，决定模型在生成下一个 token 时应如何利用上下文。其能力直接影响模型的语义理解、长程依赖建模与文本生成质量。
+随着模型规模不断扩大、推理序列越来越长，传统的多头注意力的问题逐渐暴露出来。为了解决这些问题，业界提出了一系列改进结构，在保持模型能力的同时显著提升了推理效率。
+MHA（Multi-Head Attention）
+MHA是Transformer最初采用的注意力机制，其通过将输入分别映射为多组 Query、Key、Value，并在多个注意力头上并行计算注意力分布，使模型能够从不同子空间捕捉序列关系，从而提升表达能力。
+尽管 MHA 在早期模型中表现良好，但随着模型规模不断扩大，其结构逐渐暴露出明显的工程瓶颈。要理解 MHA 的限制，需要先明确推理阶段的一个关键概念——KV Cache。
+在自回归生成过程中，模型需要逐 token 地生成输出。对于每一个新 token，模型都会与所有历史 token 进行注意力计算。如果每一步都从头计算历史序列的 Key 和 Value，这将造成巨大的重复计算开销，如下图所示：
+
+为了避免这种重复计算，模型都会在推理阶段将历史 token 的 Key 和 Value 缓存下来，供后续步骤直接使用。这一机制就是 KV Cache。通过缓存 K/V，模型在生成下一个 token 时只需计算当前 token 的 Q、K、V，再与缓存的 K/V 做一次注意力匹配即可，大幅减少了不必要的计算量，如下图所示：
+
+KV Cache 的引入，虽然减少了重复计算，但需要持续保存过往 token 的 Key 和 Value。随着序列变长、模型层数增加，缓存量本身就会不断累积。并且在多头注意力（MHA）中，每个注意力头都会独立生成并存储一组 Key 和 Value，使得缓存规模在原有基础上进一步放大。这也构成了 MHA 在大模型推理中的主要问题。
+MQA（Multi-Query Attention）
+MQA（Multi-Query Attention，多查询注意力）是一种优化注意力机制的方案，旨在减少推理阶段 KV Cache 的存储与内存带宽开销。由Google于 2019 年 11 月发表在论文《Fast Transformer Decoding: One Write-Head is All You Need》。
+MQA 的核心思想是让多个注意力头共享同一套 Key 和 Value，而不是像传统 MHA 那样为每个头分别维护独立的 K/V。如下图所示：
+
+这种共享方式大幅减少了需要缓存和读取的 K/V 张量量级，显著降低存储需求与内存带宽压力，从而大幅提升了推理速度。
+
+但这种共享机制会略微削弱注意力头的表达能力，使其精度略逊于传统 MHA，但整体损失非常小。
+
+总体来看，MQA 以极小的精度代价换来了巨大的推理效率提升，是现代大模型推理加速的重要基础结构之一。
+GQA（Group-Query Attention）
+GQA（Group-Query Attention，分组查询注意力）是在 MQA 基础上的进一步改进方案，由 Google 在论文 《GQA: Training Generalized Multi-Query Transformer Layers》中提出。该方法旨在在提升推理效率的同时，弥补 MQA 由于所有注意力头共享同一套 K/V 而造成的表达能力下降问题。
+GQA 的核心思想是：将注意力头划分为多个组（Group），每组内部的多个 Query 共享同一套 Key 和 Value，而不同组之间则使用独立的 K/V，如下图所示：
+
+这种结构本质上在 MHA 与 MQA 之间取得了折中：
+相比 MHA：不再为每个头维护独立 K/V，从而大幅减少 KV Cache 的存储需求与内存带宽压力；
+相比 MQA：不再所有头共享唯一 K/V，而是分组共享，使注意力头间仍能保持更高的多样性和表达能力。
+因此，GQA 在 推理效率 和 表达能力 之间实现了更优平衡。实际应用中，它比 MQA 能更好地处理复杂语义关系，同时仍保持较高的推理速度。
+
+总体来看，GQA 在仅增加极小计算与存储成本的前提下，显著增强了模型能力，因此被主流大模型所采用，在长序列推理和高并发场景中表现极为出色。
+Feed Forward Network
+概述
+前馈网络（FFN）是 Transformer Block 中继注意力之后的第二大核心组件，用于对 token 表示进行独立的非线性变换。其典型的“升维 → 激活 → 降维”结构，使模型能够在每个位置上学习高维特征，是 Transformer 表达能力的重要来源。
+FFN 的演进主要集中在激活函数和整体结构形式两个方向。
+激活函数
+激活函数为 FFN 引入非线性，是提升模型表达能力与稳定性的关键模块。随着模型规模不断扩大，激活函数在设计上经历了从简单线性截断到平滑非线性，再到具备门控能力的结构化形式的演进。
+ReLU
+ReLU（Rectified Linear Unit）是深度学习中最早广泛应用的激活函数之一，其定义非常简单：
+ReLU(x)=max⁡(0,x)
+其函数曲线如下图所示：
+
+ReLU 在正区间保持恒定梯度，使梯度能够高效传播，大大缓解了早期网络中的梯度消失问题，因而在浅层或中等规模神经网络中表现优异。然而，ReLU 对负区间进行“硬截断”，会导致梯度完全为零，从而引发“死亡神经元”现象，即神经元在训练过程中一旦进入负区间可能永久失活；此外，其非线性较弱，在深层 Transformer 中无法提供足够的梯度平滑性与稳定性，容易造成训练不稳定。
+随着模型深度和规模的大幅提升，ReLU 已难以满足大模型的稳定性要求，因此在现代大型语言模型中已经基本退出主流。
+GELU 
+GELU（Gaussian Error Linear Unit）是早期Transformer预训练模型（例如Bert、GPT-2/3）中曾广泛采用的平滑非线性激活函数。
+GELU的核心思想是：不再进行硬性截断，而是通过一种 随输入大小平滑变化的缩放系数 来柔性控制激活强度，使得输入在负区间、中间区间、正区间分别呈现自然的衰减、过渡与放大。
+其数学定义为：
+GELU(x)=x⋅Φ(x) 
+其中 Φ(x)表示标准正态分布的累积分布函数。
+随着 x增大，Φ(x) 趋向 1，输出趋近于 x；随着 x减小，Φ(x) 趋向 0，输出则逐渐衰减为 0；对于接近 0 的输入，函数会在 0 与 x之间进行平滑过渡，如下图所示：
+
+相比 ReLU，GELU 在全域连续可导，能在深层网络中提供更稳定的梯度传播，且不会出现 “神经元死亡”问题，因此曾在中大型 Transformer 中一度成为主流。
+SiLU
+SiLU（Sigmoid Linear Unit）也是一种连续可导的激活函数，其基本思想是使用 sigmoid 函数对线性输入进行加权，从而得到一种柔和的非线性变换。
+其数学定义如下：
+SiLU(x)=x⋅σ(x)
+当 x较大时，σ(x) 趋近于 1，输出接近x；当 x较小时，σ(x) 接近于 0，输入会被有效抑制；在接近 0 的区域，函数呈现平滑的过渡，而不是直接截断为零，如下图所示：
+
+得益于这种连续可导的结构，SiLU 在深层网络训练中同样具有良好的优化稳定性，并在多个任务中表现出与 GELU 相近的经验性能。
+Swish
+Swish 可视为 SiLU 的一般化形式，其数学定义为：
+Swish(x)=x⋅σ(βx)
+其中 β可以是固定或可学习参数。当 β=1时，Swish 与 SiLU 完全等价。尽管原论文提出让 β可学习，但实际收益有限，并可能带来训练不稳定性，因此主流实现通常将 β固定为 1。
+基于这一等价关系，在工程实践中 Swish 与 SiLU 往往混用，不作严格区分。
+GLU及其变体
+GLU（Gated Linear Unit）及其一系列变体是当前大型语言模型（LLM）中最常用的 FFN 激活结构。与传统 ReLU、GELU 等单路激活不同，GLU 类结构采用 “主分支 × 门控分支” 的双分支设计，通过引入门控机制，使模型能够对信息流进行更加细致的筛选与调控。如下图所示：
+
+门控结构的关键区别在于 门控分支所采用的门控函数。不同的函数会导致门控行为、梯度特性和最终模型性能的差异，因此形成了多种 GLU 变体。常见的门控结构包括
+GLU：使用 Sigmoid 作为门控函数
+GEGLU：使用GELU作为门控函数
+SwiGLU：使用SiLU作为门控函数
+在众多变体中，SwiGLU在性能与训练稳定性方面表现最优，因此成为当前主流 LLM（Qwen、DeepSeek等）的默认门控结构。
+
+MoE
+概述
+MoE（Mixture of Experts，混合专家模型）是在传统 FeedForward 模块基础上的一种结构扩展。其核心思想是：使用多个并行的 FeedForward 专家替代单一的 FeedForward 层，并通过 Router（路由器）根据输入 Token 的特征选择其中少量最合适的专家参与计算。这样一来，不同类型的输入能够由擅长处理该类模式的专家负责，从而显著增强模型的表达能力与适应性。MoE 已成为当前主流大语言模型（LLM）中广泛采用的、用于提升性能与效率的关键结构之一。
+
+工作流程
+MoE的工作流程如下图所示：
+
+具体步骤如下：
+路由得分计算
+Router 接收 Token 的隐藏表示，并通过线性映射为所有专家生成一组得分。
+选择 Top-k 专家
+从得分中选取得分最高的 k 个专家，其余专家在本次计算中不参与处理。
+计算路由权重
+对被选中的专家得分执行 softmax，得到归一化权重，用于表示各专家在最终输出中的贡献比例。
+专家执行前向计算
+被激活的专家分别对输入 Token 进行独立计算，生成各自的输出。
+加权合并输出
+将所有激活专家的输出按照路由权重加权求和，得到 Token 在 MoE 层的最终表示。
+能力与优势
+MoE 结构通过引入稀疏激活机制，显著提升了模型的能力和效率，主要具备以下三个核心优势：
+高容量、低计算的效率结构
+MoE 模型通过稀疏激活机制，使每次前向传播仅有少数k个专家参与计算。这种设计在不增加实际计算量的前提下，大幅提升了模型的总参数量（模型容量），实现了高效的“高容量、低计算”结构。
+专家分工协作，提升泛化与适应性
+通过路由器（Router）机制的动态分配，不同的输入 Token 会被导向最适合处理它们的专家。这种机制促使专家自动形成功能分化，每个专家专注于学习特定的模式或数据子集，从而显著增强了模型的表达能力和泛化性能。
+天然适合大规模分布式扩展
+MoE 结构中的专家模块是相互独立的，这使得专家可以轻松地分布到大规模计算集群的不同设备上并行运行，极大地提升了模型的可扩展性（Scalability）和在大规模环境下的训练与推理效率。
+残差连接与归一化
+概述
+残差结构与归一化机制是 Transformer 稳定训练的基础。随着模型深度与规模增加，传统的结构逐渐暴露出梯度路径不稳定的问题。近年来，研究者通过一系列优化改进手段，使模型能够在更高深度、更大参数规模下保持稳定训练。
+RMSNorm
+RMSNorm（Root Mean Square Normalization，均方根归一化） 是对传统 LayerNorm 的一种简化变体。它去除了均值标准化操作，仅基于输入特征的均方根（RMS）进行缩放，从而在保持归一化效果的同时降低计算复杂度。实践表明，均值项在深层 Transformer 中对稳定性贡献有限，因此去除均值不会影响模型性能，反而带来更稳定、更高效的归一化形式。目前，RMSNorm 已成为主流 LLM 中最常用的归一化方式。
+RMSNorm 的核心公式如下：
+RMSNorm(x)=xRMS(x)⋅γ
+其中：
+RMS(x)=1di=1dxi2+ϵ
+x∈Rd：输入向量
+γ：可学习的缩放参数
+ϵ：防止除零的微小数
+归一化放置位置
+在 Transformer 中，归一化层的放置位置会显著影响训练稳定性、梯度传播效率以及模型在更大深度和规模下的可扩展性。随着架构不断演进，研究者在实践中提出了多种归一化布置方式，通过在残差路径内部或模块内部调整 Norm 的位置，以获得更好的数值特性与训练表现。
+
+Post Norm
+Post Norm 是 Transformer 中最初采用的归一化放置方式，其结构是在子层（如 Self-Attention 或 FFN）计算完成并与残差相加之后，再对结果进行归一化处理
+y=Norm(x+F(x))
+Post Norm 存在一个核心问题：它会削弱残差连接中用于稳定训练的那条恒等梯度通道，从而在深层网络中导致梯度回传不稳定。要理解这一点，需要先回顾残差连接的梯度传播机制。
+对于标准残差结构：
+y=x+F(x)
+反向传播过程中，梯度会沿着两条路径回传至输入 x：
+∂y∂x=1+∂F(x)∂x
+其中的 “1” 是一条不改变梯度方向和大小的恒等映射路径，为深层网络提供了稳定的“直通”梯度通道。
+然而在 Post Norm 中，反向传播形式变为：
+∂y∂x=∂ Norm(z)∂z⋅(1+∂F(x)∂x),z=x+F(x)
+由于归一化操作会对输入进行缩放、标准化等处理，梯度在回流时也会被相应扰动，使原本应保持恒等的梯度路径不再保持为 1，从而削弱了残差连接提供的稳定梯度通道。
+在深层 Transformer 中，这种梯度扰动会层层累积，使训练更加不稳定。因此，Post Norm 在现代大规模模型中已基本不再使用。
+Pre Norm
+Pre Norm 是大多数大语言模型中采用的主流归一化方式。其结构是在进入子层（如 Self-Attention 或 FFN）之前先对输入进行归一化，然后再执行子模块计算并与残差相加：
+y=x+F(Norm(x))
+与 Post Norm 相比，Pre Norm 的设计充分保留了残差连接的关键特性：提供一条未受扰动的恒等梯度路径：
+∂y∂x=1+∂F(Norm(x))∂x
+正因如此，Pre Norm 在现代 LLM 中成为了事实上的标准结构，被广泛采用。
+Qwen3架构解析
+Qwen3是现代LLM的代表，通过学习其结构，有助于了解GQA，RoPE以及RMSNorm等改进结构是如何在现代LLM架构中使用的。
+
+整体结构定义
+class Qwen3Model(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+
+        # 输入层：token_embedding
+        self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["hidden_size"], dtype=cfg["torch_dtype"])
+
+        # transformer block
+        # nn.ModuleList：model.parameters()会自动注册其中子模块的参数
+        self.trf_blocks = nn.ModuleList(  
+            [TransformerBlock(cfg) for _ in range(cfg["num_hidden_layers"])]
+        )
+        self.final_norm = RMSNorm(cfg["hidden_size"], eps=cfg["rms_norm_eps"])
+        self.out_head = nn.Linear(cfg["hidden_size"], cfg["vocab_size"], bias=False, dtype=cfg["torch_dtype"])
+
+        if cfg["tie_word_embeddings"]:
+            # 权重共享
+            self.out_head.weight = self.tok_emb.weight
+
+        # 没有传入head_dim时，默认使用hidden_size // num_attention_heads作为head_dim
+        if cfg["head_dim"] is None:
+            head_dim = cfg["hidden_size"] // cfg["num_attention_heads"]
+        else:
+            head_dim = cfg["head_dim"]
+        # 获取到每个位置的每组向量的旋转的余弦值和正弦值
+        cos, sin = compute_rope_params(
+            head_dim=head_dim,
+            theta_base=cfg["rope_theta"],
+            context_length=cfg["max_position_embeddings"]
+        )
+        # nn.Module所提供的方法，将数值注册到缓存中，
+        # 使用方式：self.cos，self.sin
+        self.register_buffer("cos", cos, persistent=False)
+        self.register_buffer("sin", sin, persistent=False)
+        self.cfg = cfg
+        self.current_pos = 0  # 追踪KV Cache 当前位置的索引
+
+    def forward(self, in_idx, cache=None):
+        # in_idx：shape:[batch_size, num_tokens]
+        # 前向传播
+
+        # 输入层：获取到token_embedding
+        tok_embeds = self.tok_emb(in_idx)
+        x = tok_embeds # shape: [batch_size, num_tokens, hidden_size / embed_dim]
+
+        num_tokens = x.shape[1]
+        if cache is not None and len(cache) > 0 : # decode阶段
+            # 每一次decode，token在序列中的位置，从self.current_pos取
+            pos_start = self.current_pos
+            pos_end = pos_start + num_tokens # decode时，num_tokens= 1
+            # 更新self.current_pos，为下一次decode做准备
+            self.current_pos = pos_end
+            mask = torch.triu(
+                torch.ones(pos_end, pos_end, device=x.device, dtype=torch.bool), diagonal=1
+                # 例如pos_start=20,pos_end=21时，只取第20个位置这一行，并允许它关注0到20号位置
+            )[pos_start:pos_end, :pos_end]
+        else: # prefill阶段
+            pos_start = 0  
+            mask = torch.triu(
+                torch.ones(num_tokens, num_tokens, device=x.device, dtype=torch.bool), diagonal=1
+            )
+            self.current_pos=num_tokens
+        
+        # 扩展mask到[1, 1, query_len, key_value_len]，方便广播到每个batch和每个head
+        mask = mask.unsqueeze(0).unsqueeze(0)
+
+        # i: 第i层
+        for i, block in enumerate(self.trf_blocks):
+            # prefill阶段，cache传进来的是空字典{}；decode阶段，cache里已经有每一层的KV Cache
+            blk_cache = cache.get(i) if cache is not None else None
+            x, new_blk_cache = block(x, mask, self.cos, self.sin,
+                                     start_pos=pos_start,
+                                     cache=blk_cache)
+            if cache is not None:
+                # 对字典中每一层赋值K和V的Cache
+                cache[i] = new_blk_cache
+
+        # 输出前先进行层归一化
+        x = self.final_norm(x)
+        # 输出层
+        # logits.shape: [batch_size, num_tokens, vocab_size]
+        logits = self.out_head(x.to(self.cfg["torch_dtype"]))
+        # 对logits做softmax，得到概率分布，基于概率分布，依概率进行采样，得到下一个token
+        return logits
+
+    def reset_kv_cache(self):
+        self.current_pos = 0
+Transformer Block结构定义
+class TransformerBlock(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+        # GQA注意力层
+        self.att = GroupedQueryAttention(
+            d_in=cfg["hidden_size"],
+            num_heads=cfg["num_attention_heads"],
+            head_dim=cfg["head_dim"],
+            num_kv_groups=cfg["num_key_value_heads"],
+            qk_norm=cfg["qk_norm"],
+            dtype=cfg["torch_dtype"],
+            rms_norm_eps=cfg["rms_norm_eps"]
+        )
+        self.ff = FeedForward(cfg)
+        self.norm1 = RMSNorm(cfg["hidden_size"], eps=cfg["rms_norm_eps"])
+        self.norm2 = RMSNorm(cfg["hidden_size"], eps=cfg["rms_norm_eps"])
+
+    def forward(self, x, mask, cos, sin, start_pos=0, cache=None):
+        # x.shape: [batch_size, seq_len/num_tokens , hidden_size]
+        # 保存输入，用于后面进行残差连接（GQA的残差连接）
+        shortcut = x
+        x = self.norm1(x)
+        # attention
+        x, next_cache = self.att(x, mask, cos, sin, start_pos=start_pos, cache=cache)  # Shape [batch_size, num_tokens, hidden_size]
+        x = x + shortcut  # 进行残差连接
+
+        # 保存输入，用于后面进行残差连接（FFN的残差连接）
+        shortcut = x
+        x = self.norm2(x)
+        # FFN
+        x = self.ff(x)
+        x = x + shortcut  # 进行残差连接
+        return x, next_cache
+GQA结构定义
+class GroupedQueryAttention(nn.Module):
+    def __init__(
+        self, d_in, num_heads, num_kv_groups, head_dim=None, qk_norm=False,
+        dtype=None, rms_norm_eps=1e-6
+    ):
+        super().__init__()
+        assert num_heads % num_kv_groups == 0, "num_heads must be divisible by num_kv_groups"
+
+        self.num_heads = num_heads
+        self.num_kv_groups = num_kv_groups
+        self.group_size = num_heads // num_kv_groups
+
+        if head_dim is None:
+            assert d_in % num_heads == 0, "`d_in` must be divisible by `num_heads` if `head_dim` is not set"
+            head_dim = d_in // num_heads
+
+        self.head_dim = head_dim
+        self.d_out = num_heads * head_dim
+
+        # q_proj层参数为全量的：d_in输入，d_out输出
+        # 一个token向量，d_in=1024，经过q_proj运算之后，得到的向量维度：d_out
+        # Qwen3-0.6B中：d_out = num_attention_heads * head_dim = 16 * 128 = 2048
+        # 此时可以将2048维向量拆成16个Q头，每个Q头128维
+        self.q_proj = nn.Linear(d_in, self.d_out, bias=False, dtype=dtype)
+        # k_proj和v_proj的输出头数更少，d_in输入，num_kv_groups * head_dim输出
+        # Qwen3-0.6B中：num_key_value_heads * head_dim = 8 * 128 = 1024
+        # 这时可以将1024维向量拆成8个K头/V头，每个头128维
+        self.k_proj = nn.Linear(d_in, num_kv_groups * head_dim, bias=False, dtype=dtype)
+        self.v_proj = nn.Linear(d_in, num_kv_groups * head_dim, bias=False, dtype=dtype)
+
+        # 输出投影层：融合多头信息，将维度从2048，重新输出成1024维
+        self.o_proj = nn.Linear(self.d_out, d_in, bias=False, dtype=dtype)
+
+        if qk_norm:
+            self.q_norm = RMSNorm(head_dim, eps=rms_norm_eps)
+            self.k_norm = RMSNorm(head_dim, eps=rms_norm_eps)
+        else:
+            self.q_norm = self.k_norm = None
+
+    def forward(self, x, mask, cos, sin, start_pos=0, cache=None):
+        # x.shape: [batch_size, num_tokens, hidden_size]
+        b, num_tokens, _ = x.shape
+
+        # 获取Q, K, V
+        queries = self.q_proj(x)  # (b, num_tokens, num_heads * head_dim)
+        keys = self.k_proj(x)     # (b, num_tokens, num_kv_groups * head_dim)
+        values = self.v_proj(x)   # (b, num_tokens, num_kv_groups * head_dim)
+
+        # Queries分成num_heads个头，每个头的维度为head_dim
+        # 新queries shape: (b, self.num_heads,num_tokens , self.head_dim)
+        queries = queries.view(b, num_tokens, self.num_heads, self.head_dim).transpose(1, 2)
+        # Keys和Values分成num_kv_groups个组，每个组的维度为head_dim
+        # # 新keys/values  shape: (b, self.num_kv_groups,num_tokens , self.head_dim)
+        keys_new = keys.view(b, num_tokens, self.num_kv_groups, self.head_dim).transpose(1, 2)
+        values_new = values.view(b, num_tokens, self.num_kv_groups, self.head_dim).transpose(1, 2)
+
+        # 额外的归一化
+        if self.q_norm:
+            queries = self.q_norm(queries)
+        if self.k_norm:
+            keys_new = self.k_norm(keys_new)
+
+        # 重点：对queries和keys应用旋转位置编码
+        queries = apply_rope(queries, cos, sin, offset=start_pos)
+        keys_new = apply_rope(keys_new, cos, sin, offset=start_pos)
+
+        if cache is not None:
+            # decode阶段，cache不为空，先拿到cache中，历史所有token的k和v cache
+            prev_k, prev_v = cache
+            # 把当前decode阶段单个token算出来的新的key和value和前面token的k和v拼起来
+            keys = torch.cat([prev_k, keys_new], dim=2)
+            values = torch.cat([prev_v, values_new], dim=2)
+        else:
+            # prefill阶段，key,value直接取token和k_proj参数矩阵以及token和v_proj参数矩阵，实际算得的k,v向量
+            keys, values = keys_new, values_new
+        next_cache = (keys, values)
+
+        # 复制Keys和Values，使每组内的多个Query头共用同一组Keys和Values
+        keys = keys.repeat_interleave(self.group_size, dim=1)
+        values = values.repeat_interleave(self.group_size, dim=1)
+        # query, keys, values, shape: batch_size, num_heads, num_tokens, head_dim
+
+        # 注意力得分计算
+        # keys: [batch_size, num_heads, num_tokens , head_dim ]
+        # keys。transpose: [batch_size, num_heads, head_dim , num_tokens ]
+        attn_scores = queries @ keys.transpose(2, 3)
+        # 需要对score做因果掩码，使得每个token只能关注自己和前面的token
+        attn_scores = attn_scores.masked_fill(mask, -torch.inf)
+        attn_weights = torch.softmax(attn_scores / self.head_dim**0.5, dim=-1)
+        # attn_weights: [batch_size, num_heads, query_len/num_tokens, query_len/num_tokens]
+        # values: [batch_size, num_heads, query_len, head_dim]
+        # (attn_weights @ values)结果：[batch_size, num_heads, query_len, head_dim]
+        # context转置后shape: [batch_size, query_len, num_heads, head_dim]
+        # reshape: 去掉num_heads: d_out: num_heads* head_dim
+        context = (attn_weights @ values).transpose(1, 2).reshape(b, num_tokens, self.d_out)
+        # o_proj降维：转换成(b, num_tokens, d_in(hidden_size))
+        # o_proj： 1、将多个简单拼接的V向量，有机融合在一起， 2、将d_out的向量（num_heads * head_dim）转换回 hidden_size
+        return self.o_proj(context), next_cache
+
+def compute_rope_params(head_dim, theta_base=10_000, context_length=4096, dtype=torch.float32):
+    """
+    计算每个位置的余弦值和正弦值，用于旋转位置编码
+    head_dim假设等于8：
+    [0,1,2,3,4,5,6,7]
+    常见二维旋转讲解里会写成相邻配对：[0,1],[2,3],[4,5],[6,7]
+    我们这里的实现：[0,4],[1,5],[2,6],[3,7]
+    因此，此处计算出，每个序列位置的token的每个维度处，cos和sin的值，后面直接使用该值进行计算
+    """
+    assert head_dim % 2 == 0, "Embedding dimension must be even"
+
+    # 1. 生成频率下标：0, 2, 4, ..., head_dim-2，总数为head_dim//2
+    # torch.arange: 生成一维张量，[)
+    # 2i的所有可能取值
+    freq_indices = torch.arange(0, head_dim, 2, dtype=dtype)
+
+    # 2. 转成浮点，并除以 head_dim，得到指数
+    # 2i/d
+    exponents = freq_indices.float() / head_dim
+
+    # 3. 计算 theta_base 的这些指数次幂
+    # 1000000 ^ (2i/d) 
+    scales = theta_base ** exponents
+
+    # 4. 取倒数，得到 inverse frequencies
+    # shape : (head_dim / 2 , )
+    # 所有的θ_i的可能取值
+    inv_freq = 1.0 / scales
+
+    # 计算位置索引：[0,1,2,3,...,context_length-1] shape: (context_length,)
+    # positions代表的就是 token在序列当中所有可能的位置
+    positions = torch.arange(context_length, dtype=dtype)
+
+    # 计算每个位置的每组旋转的角度
+    # positions: [0,1,2,3.... context_length]
+    # positions.unsqueeze(1): (context_length,1) [[0],[1],[2],.... [context_length -1]]
+
+    # inv_feq:[100_0000 ^ (0),100_0000 ^ (-2/128),100_0000 ^ (-4/128),,100_0000 ^ (-6/128),100_0000 ^ (-126/128)]
+    # inv_freq.unsqueeze(0): (1,head_dim // 2) [[100_0000 ** (-0), 100_0000 ** (-2/head_dim),100_0000 ** (-4/head_dim), ... ]]
+
+    # positions.unsqueeze(1) * inv_freq_unsqueeze(0) 运算时：
+    #   1、前者的列会复制成 head_dim /2 列，后者的行，会复制成 context_length行
+    #   2、做哈达玛积运算
+
+    # angles: (context_length, head_dim // 2)
+    # angles[0,0]=序列中第0个位置处，第0组分量的旋转角度，对应的就是m * theta_i
+
+    angles = positions.unsqueeze(1) * inv_freq.unsqueeze(0)  # Shape: (context_length, head_dim // 2)
+
+    # 由于是前半部分和后半部分对应索引位置处做旋转，所以此处将angels复制，从而使得旋转的一组二维分量，共享一个angles值
+    # head_dim=8时，一行会变成：[angle_0, angle_1, angle_2, angle_3, angle_0, angle_1, angle_2, angle_3]
+    angles = torch.cat([angles, angles], dim=1)  # Shape: (context_length, head_dim)
+    
+    
+
+    # 预计算每个角度的余弦值和正弦值
+    cos = torch.cos(angles) # 得到序列当中每个位置，每个分量的余弦值
+    sin = torch.sin(angles) # 得到序列当中每个位置，每个分量的正弦值
+
+    return cos, sin
+
+def apply_rope(x, cos, sin, offset=0):
+    """
+    使用计算好的cos和sin来计算旋转位置编码之后的x，注意，此处获取分组向量不是使用紧挨着的两个值构造而成的，
+    如果 head_dim = 8，此处的配对关系就是：
+                    (0, 4)
+                    (1, 5)
+                    (2, 6)
+                    (3, 7)
+    而不是常见的：
+                    (0, 1)
+                    (2, 3)
+                    (4, 5)
+                    (6, 7)
+    Args:
+        x: 需要应用旋转位置编码的张量，shape为[batch_size, num_heads, seq_len, head_dim]
+        cos: 预计算好的余弦值张量，shape为[max_position_embeddings, head_dim]
+        sin: 预计算好的正弦值张量，shape为[max_position_embeddings, head_dim]
+        offset: 当前这段token在完整序列中的起始位置，需要依赖该变量，来从预先计算好的cos和sin张量中取值出来
+    Returns:
+        应用RoPE后的张量，shape与x相同
+
+    具体例子：
+        假设某个token在某个head上的向量为：
+            x = [x0, x1, x2, x3, x4, x5, x6, x7]
+        当前position对应的角度为：
+            angles = [a0, a1, a2, a3, a0, a1, a2, a3]
+        从cos和sin中取出来的值为
+            pos_cos = [cos(a0), cos(a1), cos(a2), cos(a3), cos(a0), cos(a1), cos(a2), cos(a3)]
+            pos_sin = [sin(a0), sin(a1), sin(a2), sin(a3), sin(a0), sin(a1), sin(a2), sin(a3)]
+        rotate_half(x)会先把x拆成前后两半：
+            first_half = [x0, x1, x2, x3]
+            second_half = [x4, x5, x6, x7]
+        再拼成：
+            rotate_half(x) =[-second_half,first_half]
+            也即：
+            rotate_half(x) = [-x4, -x5, -x6, -x7, x0, x1, x2, x3]
+        最终计算：
+            x_rotated = x * pos_cos + rotate_half(x) * pos_sin
+        也即：
+            x_rotated = [first_half, second_half] * pos_cos + [-second_half, first_half] * pos_sin
+        由于first_half和second_half，也都是向量，所以上面的式子，可以拆解成对应位置处的处理。
+                      
+        现从first_half和second_half当中，取第0个索引位置处的值，x0和x4，计算最终结果：
+            [x0*cos(a0) - x4 * sin(a0), x4*cos(a0) + x0*sin(a0)]，
+        展开后就是：
+            x0' = x0*cos(a0) - x4*sin(a0)
+            x4' = x4*cos(a0) + x0*sin(a0)
+
+        等价于：
+            [x0, x4] * 旋转矩阵
+        
+        其他分量同理。
+    """
+    # x: (batch_size, num_heads, seq_len, head_dim)
+    batch_size, num_heads, seq_len, head_dim = x.shape
+    assert head_dim % 2 == 0, "Head dimension must be even"
+    if offset + seq_len > cos.shape[0]:
+        raise ValueError(
+            f"RoPE position out of range: offset={offset}, seq_len={seq_len}, "
+            f"max_position_embeddings={cos.shape[0]}"
+        )
+
+    # 将x切分为前一半和后面一半
+    # x.shape : [batch_size, num_heads, seq_len, head_dim]
+    x1 = x[..., : head_dim // 2]  # 前面一半：Shape: (batch_size, num_heads, seq_len, head_dim // 2)
+    x2 = x[..., head_dim // 2:]  # 后面一半：Shape: (batch_size, num_heads, seq_len, head_dim // 2)
+
+    # cos, sin : shape: [context_length,head_dim]
+    # 调整sin和cos的形状：当前这段 token 取出对应位置的 cos 和 sin，并调整 shape 以便广播
+    # offset: 10 seq_len: 2: [10,11]
+    # offset: 12 seq_len:3 [12,13,14]
+    # offset=0时，表示从序列开头开始取
+    cos = cos[offset:offset + seq_len, :].unsqueeze(0).unsqueeze(0)  # Shape: (1, 1, seq_len, head_dim)
+    sin = sin[offset:offset + seq_len, :].unsqueeze(0).unsqueeze(0)  # Shape: (1, 1, seq_len, head_dim)
+
+    # 应用旋转变换：rotate_half(x) = [-后半部分, 前半部分]
+    rotated = torch.cat((-x2, x1), dim=-1) # Shape: (batch_size, num_heads,seq_len, head_dim)
+    # 二维旋转公式：原来的向量[a,b] ,旋转后的向量[a', b'] = [a cos - b sin, a sin + b cos]
+    # 写成向量形式，就是：[a, b] * cos + [-b, a] * sin=[acos-bsin,bcos+asin]
+    # 以(x0, x4)举例，旋转后会变成：
+    # x0' = x0 * cos - x4 * sin
+    # x4' = x0 * sin + x4 * cos
+    # 同理：
+
+    # x1' = x1 * cos - x5 * sin
+    # x5' = x1 * sin + x5 * cos
+    x_rotated = (x * cos) + (rotated * sin)
+
+    # 返回旋转后的x
+    return x_rotated.to(dtype=x.dtype)
+生成
+def generate_text(input_ids,model:Qwen3Model,tokenizer:Qwen3Tokenizer):
+
+    import torch
+
+    with torch.no_grad():
+        output_logits = model(input_ids)
+        # 使用贪心策略，
+        res = output_logits.argmax(dim=-1) # shape:batch_size,seq_len
+    
+    res_list = res.tolist()
+    print(res_list)
+    res = tokenizer.decode(res_list[0])
+    print(res)
+    return res
+
+def main():
+    """
+    测试Qwen3模型的生成
+    Returns:
+        _type_: _description_
+    """
+    import torch
+    tokenizer = Qwen3Tokenizer(tokenizer_file_path=r"Qwen3-0.6B\tokenizer.json")
+    model = Qwen3Model(QWEN_CONFIG_06_B)
+    model.eval()
+    model.to("cuda")
+    input_ids = torch.tensor(tokenizer.encode("你好，今天天气真好啊")).unsqueeze(0).to("cuda")
+    output = generate_text(input_ids,model,tokenizer)
+    
+    print(output)
+LLM微调
+概述
+微调指在一个已经预训练好，或者已有通用能力的大模型基础上，继续用特定数据训练它的参数，让它适应某个任务、风格、领域或偏好。微调是将通用大语言模型（Large Language Model, LLM）适配至特定任务的关键技术手段。
+其核心价值主要体现在以下三个方面：
+增强任务执行能力：显著提升模型在特定任务上的可靠性与准确性，使其更好地满足实际应用需求。
+定制输出行为：使模型能够按照预期的语气、格式生成内容，确保输出一致、可靠、符合规范。
+注入领域知识：将特定领域的术语、规则或业务逻辑内化至模型参数中，从而增强其在专业场景下的适用性与表现力。
+需要强调的是，面对具体任务时，应优先尝试提示工程（Prompt Engineering）或者是检索增强技术（RAG）等轻量级方法。仅当提示工程无法达到预期效果时，才应考虑采用微调。
+整体流程
+微调整体流程可以分为以下多个环节：
+模型选择-> 数据准备 -> 微调训练 -> 模型验证
+模型选择
+在进行监督微调（SFT）时，模型选择主要包括两个问题：选择 Base Model 还是 Instruct Model，以及选择多大规模的模型。
+对于绝大多数应用场景，通常建议优先选择 Instruct Model 作为微调起点。Instruct Model 已经在 Base Model 的基础上经过指令微调、偏好对齐等后训练流程，具备较好的指令理解和对话能力，因此可以降低数据准备和训练难度，更适合客服问答、内容生成、结构化输出、多轮对话等常见任务。Base Model 则更适合高度定制化场景，例如任务形式非常特殊，或团队拥有大量高质量领域数据，希望从基础模型状态开始进行深度适配。
+在模型规模方面，参数量越大的模型通常能力越强，但显存占用、训练成本和推理成本也更高。因此模型并不是越大越好，而应根据任务复杂度、硬件资源、响应速度和部署成本综合选择。实践中可以先从成本可控的中小规模 Instruct Model 开始验证，再根据效果决定是否扩大模型规模。
+常见任务及可选择的模型类型参考：
+意图识别、文本分类等：Instruct Model，1B-7B；
+智能客服FAQ/工单辅助：Instruct Model，7B-14B；
+企业知识库问答/RAG：Instruct Model，7B-14B起步，复杂场景14B-32B；
+NL2SQL/自然语言转SQL：Instruct Model，简单场景7B-14B，复杂场景14B-32B；
+本地轻量部署、边缘设备：Instruct Model，0.5B-4B。
+注意：上述只作为初始选型参考，最终仍应通过任务评测确定。对于多数业务微调项目，可以先选择 7B/8B 或 14B 级别的 Instruct Model 做基线实验；如果评测发现复杂推理、长上下文理解或结构化输出稳定性不足，再考虑升级到 32B 或更大模型。
+数据准备
+在微调大语言模型时，数据是决定模型性能与适用性的关键因素。模型表现，很大程度上取决于其训练数据的质量。根据数据的来源与可访问性，通常可分为两大类：公共数据源与私有数据源。
+公共数据集易于获取，通常是绝佳的起点，常用的数据共享平台有：
+Hugging Face Hub
+Hugging Face Hub 是一个不可或缺的资源，它托管了数千个数据集，这些数据集可以通过 datasets 库轻松访问。用户可以根据任务类型（如文本生成、文本摘要等）、语言以及数据集的许可证进行筛选，从而快速找到符合需求的数据。
+Model Scope
+ModelScope 是阿里巴巴旗下的模型开放平台，提供了一系列高质量的开源模型与数据集。ModelScope 的数据集覆盖了多个领域，包括但不限于自然语言处理、计算机视觉和多模态任务。
+私有数据源是指企业或组织内部拥有的数据集，这些数据可能受到版权保护或隐私限制，仅限于内部使用或特定授权范围内使用。以下是常见的私有数据源：
+企业内部文档: 如产品手册、制度规范、技术文档、历史报告、会议纪要等，适合用于增强模型对企业知识、流程和术语的理解。
+用户反馈与客服数据: 如客户咨询、投诉、评论、售后工单等，适合用于训练模型理解用户问题、改进客服回复风格和问题分类能力。
+业务系统数据: 如订单记录、交易流水、电子病历、质检记录、设备日志等。这类数据在脱敏和加工后，构造成分类、抽取、摘要、风险识别、异常分析等任务样本，让模型输出结构化结果或分析结论。
+私有数据通常并非专为模型微调而准备，因此在使用前往往需要经过清洗、结构化和标注等预处理步骤。为了构建高质量的领域特定训练集，企业可以根据实际需求，由内部专业团队或外部众包平台对原始数据进行系统化整理与标注。
+此外，还可以借助自动化工具提升整体效率，例如使用 Easy Dataset 等开源方案。在人机协同的工作模式下，企业能够更高效地将私有知识转化为高质量的微调数据，从而更有力地支撑模型在特定业务场景中的性能提升。
+获取到数据集之后，还需要将数据集处理成专门的格式，才可进一步进行微调。在后面具体的微调实现中，我们会了解到，针对于不同的训练方法，需要将数据处理成对应的不同形式。
+微调训练
+在微调整体流程中，训练阶段是模型真正根据任务数据进行调整的核心环节。我们会把准备好的训练数据送入模型，让模型在已有预训练能力的基础上继续学习，使它逐渐适应当前任务的数据格式、回答风格、领域知识或偏好要求。
+
+根据训练目标和数据形式的不同，LLM 的微调训练可以分为多种方法：
+监督微调：也就是 SFT（Supervised Fine-Tuning）。SFT 使用带有标准答案的数据进行训练，例如“指令-回答”“问题-答案”“输入-输出”等格式。
+偏好对齐训练：典型方法包含DPO。DPO 使用的数据通常不是单个标准答案，而是由同一个 prompt 下的“更优回答”和“较差回答”组成。它的目标不是简单提高某个标准答案的概率，而是让模型相对于较差回答，更倾向于生成人类或业务更偏好的回答。也就是说，DPO 更强调学习回答之间的相对偏好关系。
+基于人类反馈的强化学习：典型代表是 RLHF（Reinforcement Learning from Human Feedback）。RLHF 通常会先使用人工偏好数据训练奖励模型，再通过强化学习方法优化大语言模型，使模型生成更符合人类偏好的回答。相比 SFT 和 DPO，RLHF 流程更复杂，训练成本更高，但在对齐模型行为、提升交互体验方面具有重要作用。
+除了按照训练目标分类，微调训练还可以按照参数更新方式进行分类：
+全参数微调：全参数微调会更新模型的全部参数，训练自由度最高，但资源消耗也最大。
+参数高效微调：仅更新少量参数或引入少量可训练模块，在显著降低资源消耗的同时，高效适配目标任务。常见的参数高效微调的方法有：LoRA, QLoRA等。
+模型验证
+在模型完成微调后，需要通过验证环节评估模型是否真正学到了目标任务能力。模型验证不仅要关注训练损失是否下降，还要结合验证集指标、样例推理结果以及实际任务效果，综合判断模型的泛化能力、稳定性和可用性。
+通过模型验证，可以发现过拟合、指令跟随能力不足、回答质量不稳定等问题，并为后续的数据优化、参数调整和训练策略改进提供依据。
+两种微调算法
+本节以手写两种微调范式的具体实现为例，讲解微调的基本流程，以及微调背后的算法实现。两种微调范式分别为：监督微调（SFT, Supervised Fine Tuning）和直接偏好优化（DPO, Direct Preference Optimization）。
+SFT实现
+本节以一个具体例子，讲解SFT的基本实现过程。该例子的具体目标为：将HYPERLINK "https://huggingface.co/Qwen/Qwen3-0.6B-Base"Qwen3-0.6B-Base模型，微调成一个遵循人类指令，能进行多轮对话的模型。
+获取预训练模型和数据
+本次微调所使用的数据为HuggingFaceH4/ultrachat_200k数据集，可从魔搭社区使用如下命令下载数据集：
+# uv pip install modelscope
+modelscope download --dataset HuggingFaceH4/ultrachat_200k --local_dir ./data/ultrachat_200k
+本次微调的预训练模型为：Qwen3/Qwen3-0.6B-Base，也可在魔搭社区进行下载：
+modelscope download --model Qwen/Qwen3-0.6B-Base --local_dir ./model/Qwen3-0.6B-Base
+数据准备
+使用Chat template
+开源大模型厂商或团队在训练指令微调 / 对话模型时，通常都会定义一套固定的 chat template，把多轮消息序列转换成模型实际看到的文本格式。
+下图展示了通过tokenizer当中自带的chat template，将一个以列表表示的对话，转换成符合特定模型训练使用的字符串：
+
+实际训练过程如下所示：
+
+在推理过程，仍然需要使用相同的chat template，来封装输入的消息，即可让LLM基于预测下一个token的方式，来实现多轮对话：
+
+处理函数如下所示：
+from transformers import AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained("model/Qwen3-0.6B-Base")
+model = AutoModelForCausalLM.from_pretrained("model/Qwen3-0.6B-Base")
+def get_data_ultrachat_200k(config:SFTConfig):
+    # 2、下载并处理数据集
+    # 2.1 加载UltraChat 200k数据集
+    ultrachat_200k_data:datasets.DatasetDict = datasets.load_dataset("./data/ultrachat_200k")
+    tokenizer = load_model_tokenizer()[1]
+    train_data = []
+    i = 0
+    # 2.2 对数据进行tokenize处理
+    while True:
+        data:List = ultrachat_200k_data["train_sft"][i]["messages"]
+        input_ids = tokenizer.apply_chat_template(data,tokenize=True,add_generation_prompt=False,truncation=True,max_length=2500)
+        
+        train_data.append(input_ids)
+        i += 1
+        if i % 1000 == 0:
+            print(f"已经处理了 {i} 条数据")
+        # 仅训练train_data_size条数据
+        if i == config.train_data_size:
+            break
+return train_data
+构造assistant answer 掩码
+在SFT阶段，我们希望模型能够基于用户的问题（或者历史多轮对话），进行回答，所以不应该对用户输入prompt部分的token计算损失，只能对assistant回答部分，计算损失。这是SFT和预训练过程中一个最本质的区别。
+因此，将数据调用chat template处理成以文本表示的对话形式之后，还需要设置assistant回答的掩码，后面在计算损失时，仅计算assistant回答的损失。
+
+具体代码实现如下：
+from transformers import PreTrainedTokenizerFast
+from typing import List
+def create_answer_mask(labels,tokenizer:PreTrainedTokenizerFast):
+    """
+    创建answer mask，从labels当中找出assistant回答的部分，然后输出一个与labels相同shape的mask
+    """
+    # 构建answer mask，输入的labels为批量 tokenize之后的数据，对于每一条数据，查找当中assistant回答的部分，将其设置为1
+
+    # 1. 构造一个和labels相同shape的全0矩阵
+    answer_mask = torch.zeros_like(labels)
+
+    # 2、找到<|im_end|> 所对应的token_id
+    eos_token_id = tokenizer.encode("<|im_end|>")[0]
+
+    # 3、遍历labels中的每一个样本
+    # labels.shape: batch_size, seq_len
+    for idx,ids in enumerate(labels):
+        # 3.1、获取到所有的eos_position
+        eos_position:List = torch.where(ids == eos_token_id)[0].tolist()
+        # 3.2、解析获得user_ends和assistant_ends
+        user_ends,assistant_ends = _parse_conversation_turns(eos_position)
+        # 3.3、设置answer mask
+        _set_answer_masks(answer_mask[idx],user_ends,assistant_ends)   
+    
+    # 4、结果返回:
+    return answer_mask
+
+def _parse_conversation_turns(eos_positions:List[int]):
+    """
+    输入eos_positions，输出user所对应的end位置和assistant所对应的end位置。
+
+    以下面的对话为例：
+    <|im_start|>user
+    什么是习惯？<|im_end|>
+    <|im_start|>assistant
+    习惯是指在一定时间内重复执行的行为。<|im_end|>
+    <|im_start|>user
+    如何培养一个习惯<|im_end|>
+    <|im_start|>assistant
+    21天培养法，每天坚持xxx<|im_end|>
+
+    假设第一个eos_token_id index为10，第二个为15，第三个为20，第四个为25
+    那么输入的eos_token_id为：[10,15,20,25]
+    user_turns为从第一个开始取，每隔一个取一次，assistant_turns为从第二个开始取，每隔一个取一次。
+
+    输出结果为：
+        user_turns:[10,20]
+        assistant_ends:[15,25]
+    """
+
+    use_ends = [pos for pos in eos_positions[::2]]
+    assistant_ends = [pos for pos in eos_positions[1::2]]
+
+    return use_ends,assistant_ends
+
+def _set_answer_masks(mask,user_ends,assistant_ends):
+    """
+    将mask当中，assistant回答的部分，设置为1（原地修改，不返回新的mask），其余部分保持为0
+
+    以下面的对话为例：
+    <|im_start|>user
+    什么是习惯？<|im_end|>
+    <|im_start|>assistant
+    习惯是指在一定时间内重复执行的行为。<|im_end|>
+    <|im_start|>user
+    如何培养一个习惯<|im_end|>
+    <|im_start|>assistant
+    21天培养法，每天坚持xxx<|im_end|>
+
+    假设第一个eos_token_id index为10，第二个为15，第三个为20，第四个为25
+    那么user_turns:[10,20]，assistant_ends:[15,25]
+
+    
+    要想获取到assistant的回答的起始位置，就需要跳过<|im_end|>, \n, <|im_start|>,assistant , \n 这5个token
+    要想获取到assistant的回答的结束位置，需要将<|im_end|>也包括进去，又因为列表切片是左闭右开的，所以需要向后移动一位
+    """
+    num_user_turns = len(user_ends)
+    num_assistant_turns = len(assistant_ends)
+    # 多轮对话没有被截断或者最后一轮整个assistant回答被截断，user轮数和assistant轮数一致
+    if num_user_turns == num_assistant_turns:
+        for user_end,assistant_end in zip(user_ends,assistant_ends):
+            answer_start = user_end + 5
+            answer_end = assistant_end + 1
+            mask[answer_start:answer_end] = 1
+
+    # 最后一轮，assistant回答被部分截断，此时user轮数比assistant轮数多一轮
+    elif num_user_turns == num_assistant_turns + 1:
+        for user_end,assistant_end in zip(user_ends[:-1],assistant_ends):
+            answer_start = user_end + 5
+            answer_end = assistant_end + 1
+            mask[answer_start:answer_end] = 1
+        
+        # 处理最后一轮被截断的助手回答
+        last_user_end = user_ends[-1] 
+        last_answer_start = last_user_end + 5
+        mask[last_answer_start:] = 1
+损失计算
+监督微调模型的本质是：在给定的一个特定prompt作为输入的前提下，让模型输出的结果，更接近于训练数据的结果。
+
+模型在给定特定问题的前提下，输出的回答的概率计算公式如下所示，SFT的训练目标就是使得该概率最大化（也即最大似然估计思想）：
+πθ(y∣x)=k=1mPθyk∣x,yk
+使用对数概率，将概率相乘转换成对数概率相加，并添加上负号，将最大化问题转换成损失函数当中常用的最小化问题，再除以当前序列总token数量，将总loss变成平均loss，即可得到最终的损失函数：
+Loss=-1mk=1mlog⁡Pθyk∣x,yk
+具体代码实现如下：
+def compute_loss(output_logits,target_labels,assistant_answer_mask):
+    """
+    对于单个step，计算前向传播后的损失：
+    """
+    # 对output_logits进行softmax处理，得到每个token的概率
+    log_probabilities = torch.log_softmax(output_logits,dim=-1)
+    # 通过gather函数，得到model输出的target token处所对应的位置
+    gathered_log_probs = torch.gather(
+        log_probabilities,
+        dim=-1,
+        index=target_labels.unsqueeze(-1)
+    )
+
+    # 计算负对数似然损失
+    negative_log_likelihood = gathered_log_probs*(-1)
+
+    token_losses = negative_log_likelihood.squeeze(-1)
+
+    # 对token_losses进行mask，只关注answer部分的loss
+    masked_token_losses = torch.mul(token_losses,assistant_answer_mask)
+
+    # 只对batch中所有有效token做平均，更接近SFTTrainer默认的token-level mean口径
+    valid_token_count = assistant_answer_mask.sum()
+    average_loss = masked_token_losses.sum() / valid_token_count
+
+    return average_loss
+微调训练
+构建好损失函数后，即可开始编写train的主逻辑，大模型微调训练整体流程与传统NLP任务类似，包含如下步骤：
+遍历所有batch，对每个batch，进行如下操作：
+张量准备：获取当前batch的数据，进行padding，构建 input_ids, labels和assistant_answer_mask；
+模型前向传播：前向传播，获取模型输出的logits；
+损失计算：对logits和labels，使用损失函数，计算当前batch损失；
+反向传播：反向传播，计算梯度；
+参数更新：使用特定的优化器（例如AdamW）对参数进行更新。
+张量准备环节，需要构建出模型前面
+具体代码实现如下所示：
+def train(model,config,tokenizer):
+    device = config.device
+    train_data = get_data_ultrachat_200k(config=config)
+    model.train()
+    model.to(device)
+    total_steps  = len(train_data) // config.batch_size
+    print(f"总训练步数为{total_steps}")
+    optimizer = torch.optim.AdamW(model.parameters(),lr=config.max_lr)
+    writer = SummaryWriter(log_dir=config.log_dir)
+    step_losses = []
+    skipped_batches_count = 0
+    import tqdm
+    progress_bar = tqdm.tqdm(total=total_steps, desc="step")
+    for step in range(total_steps):
+        # 1.获取数据
+        batch = train_data[step*config.batch_size:(step+1)*config.batch_size]
+        
+        # 使用 <|endoftext|> 作为pad token
+        pad_token_id:int = tokenizer.pad_token_id
+        max_len = max(len(ids['input_ids']) for ids in batch)
+        
+        padded_ids = []
+        
+        # 对batch进行padding，使整个batch的序列长度相同
+        for ids in batch:
+            # print('当前的ids为',ids)
+            input_ids = ids["input_ids"]
+            padding_length = max_len - len(input_ids)
+            padded_sequence = torch.nn.functional.pad(torch.tensor(input_ids,dtype=torch.long), (0, padding_length), value=pad_token_id).tolist()
+            padded_ids.append(padded_sequence) 
+            
+        
+
+        # 2. 构建input_ids和output_ids，（如果不手写实现，可以使用transformers的DataCollatorForLanguageModeling）
+        batch_input_tensor = torch.tensor(padded_ids)
+        model_inputs = batch_input_tensor[:,:-1].to(device)
+        target_labels = batch_input_tensor[:,1:].to(device)
+
+        padding_mask = torch.where(target_labels == pad_token_id,0,1)
+        assistant_answer_mask = create_answer_mask(model_inputs,tokenizer).to(device)
+        
+
+        final_loss_mask = assistant_answer_mask & padding_mask
+
+        # 判断当前数据当中是否存在无有效的answer token的情况，如果有则跳过
+        tokens_per_sample = final_loss_mask.sum(dim=-1)
+        min_answer_tokens = tokens_per_sample.min().item()
+        if min_answer_tokens == 0:
+            print(f"当前step {step+1}中，无有效answer token，跳过该批次")
+            skipped_batches_count+=1
+            progress_bar.update(1)
+            continue
+
+        # 3. 执行前向传播
+        model_logits = model(model_inputs).logits
+
+        # 4、计算当前step的平均loss
+        step_loss = compute_loss(output_logits=model_logits,target_labels=target_labels,assistant_answer_mask=final_loss_mask)
+
+        # 5、反向传播并更新参数
+        step_loss.backward()
+        current_learning_rate = cosine_decay(
+            current_step=step,
+            warmup_ratio=config.warmup_ratio,
+            total_steps=total_steps,
+            max_lr=config.max_lr,
+            min_lr=config.min_lr
+        )
+
+        writer.add_scalar("train_lr",current_learning_rate,step)
+
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = current_learning_rate
+        optimizer.step()
+        optimizer.zero_grad()
+        step_losses.append(step_loss.item())
+        progress_bar.update(1)
+        progress_bar.set_postfix(loss=f"{step_losses[-1]:.4f}", lr=f"{current_learning_rate:.2e}")
+
+        should_log = (step + 1) % config.log_iter == 0 or (step + 1) == total_steps
+        if should_log:
+            recent_losses = step_losses[-config.log_iter:]
+            recent_average_loss = np.nanmean(recent_losses)
+
+            current_time = time.strftime("%Y-%m-%d %H:%M:%S")
+            
+            print(
+                f"时间：{current_time} | "
+                f"步数：{step+1}/{total_steps} | "
+                f"最近{len(recent_losses)}批次平均损失：{recent_average_loss:.4f} | "
+                f"当前学习率：{current_learning_rate:.2e}"
+            )
+            writer.add_scalar("train_loss",recent_average_loss,step)
+
+    print("训练完成")
+推理验证
+使用model.generate()，可以对训练好的模型，进行推理测试，具体代码如下所示：
+from transformers import AutoModelForCausalLM,AutoTokenizer
+import argparse
+import torch
+parser = argparse.ArgumentParser()
+parser.add_argument("--model_name",type=str,default="model/Qwen3-0.6B-Base",help="模型路径")
+parser.add_argument("--tokenizer_name",type=str,default=None,help="模型路径")
+parser.add_argument("--prompt",type=str,default="你好",help="提示词")
+
+args = parser.parse_args()
+model_name = args.model_name
+tokenizer_name = args.tokenizer_name
+prompt = args.prompt
+print('输入的prompt为：',prompt[:30])
+print("模型路径为：",model_name)
+
+tokenizer_name = tokenizer_name or model_name
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+inputs = tokenizer.apply_chat_template([{"role":"user","content":prompt}],tokenize=True,add_generation_prompt=True,return_tensors="pt",max_length=2048,enable_thinking=True)
+print("得到的inputs为：",inputs)
+input_ids = inputs["input_ids"].to("cuda")
+attention_mask = inputs["attention_mask"].to("cuda")
+
+model = AutoModelForCausalLM.from_pretrained(model_name,dtype = torch.float16,device_map="auto")
+model.eval()
+output_ids = model.generate(inputs=input_ids,attention_mask=attention_mask,max_new_tokens=500,eos_token_id=[151643,151645])[0][len(input_ids[0]):].tolist()
+print('当前的output_ids位：',output_ids)
+try:
+    # 151668为</think>的token_id
+    index = len(output_ids) - output_ids[::-1].index(151668)
+except Exception:
+    # 没有thinking
+    index = 0
+thinking_content = tokenizer.decode(output_ids[:index],skip_special_tokens=True).strip("\n")
+content = tokenizer.decode(output_ids[index:],skip_special_tokens=True).strip("\n")
+print("thinking content为：",thinking_content)
+print("content为：",content)
+SFT存在的问题
+使用SFT微调时，如果训练轮次过多，学习率过高，或训练数据规模较小且分布单一，模型可能会过度拟合微调数据，导致对训练数据相关任务表现较好，但在通用知识，通用指令遵循或者训练集外问题上的表现下降，这种现象在一定程度上可能表现为灾难性遗忘，即模型原有的通用能力被新任务数据覆盖或者削弱。 
+解决方案有：
+控制训练轮次和学习率，并结合验证集效果进行早停等。对于小规模数据，一般可尝试训练1-2个epoch，再根据验证集和实际效果调整；
+构造混合数据：训练数据当中除了包含实际任务所需数据外，还可以混杂一些通用能力数据，例如适当加入高质量的通用指令数据，通用回答数据，使用混合数据进行训练，以降低模型对单一任务分布的过度偏移；
+设定任务能力和通用能力两类测评集，在微调后同时评估，避免只优化特定任务而牺牲基础能力。
+DPO实现
+DPO（Direct Preference Optimization）出自 2023 年论文《HYPERLINK "https://arxiv.org/pdf/2305.18290"Direct Preference Optimization: Your Language Model is Secretly a Reward Model》。它的思想是直接利用“优答优于差答”的偏好数据训练模型，无需单独训练奖励模型，也不用强化学习。相比 SFT 只学习标准答案，DPO更强调答案之间的相对偏好。
+
+本案例基于前面由SFT所得到的Instruct模型，对其进行DPO训练。
+数据集概述
+DPO 的数据与 SFT 明显不同。SFT 通常只需要一条“输入-标准回答”样本，而 DPO 需要成对的偏好数据，即在同一个 prompt 的两个回答：一个是更符合人类偏好的 chosen answer，另一个是相对较差的 rejected answer。
+因此，一条 DPO 样本通常由三部分组成：prompt、chosen 和 rejected。其中，prompt 表示用户问题或上下文，chosen 表示人工标注或筛选后更优的回答，rejected 则表示质量较低、不够安全、帮助性较弱或不符合偏好的回答。
+
+DPO 训练的目标不是单独拟合某个“标准答案”，而是让模型在相同条件下更倾向生成 chosen，而不是 rejected，所以数据的核心不在“绝对正确”，而在“相对偏好”是否清晰。实际实现时，通常还需要先把三部分文本按统一模板拼接并分词，再分别构造 chosen 序列和 rejected 序列，以便后续计算两者在模型下的对数概率差异。
+本案例中DPO数据集为：HYPERLINK "https://huggingface.co/datasets/HuggingFaceH4/ultrafeedback_binarized"HuggingFaceH4/ultrafeedback_binarized。该数据集是 Hugging Face H4 基于原始 UltraFeedback 数据集整理出的一个二元偏好数据集，主要用于偏好学习任务，如奖励模型训练和 DPO。原始 UltraFeedback 中，每个 prompt 通常对应 4 个不同模型生成的回答，并由 GPT-4 从帮助性、真实性等维度进行打分；而在这个版本中，数据集会选出得分最高的回答作为 chosen，再从其余回答中选取一个作为 rejected，从而构造成“优回答 vs 差回答”的偏好对。
+使用modelscope下载该数据集，命令如下：
+modelscope download --dataset HuggingFaceH4/ultrafeedback_binarized --local_dir ./data/ultrafeedback_binarized
+损失计算
+DPO 的损失设计包含两方面的考虑。
+第一，是在同一个 prompt 下，模型要更偏向偏好回答（chosen），而不是拒绝回答（rejected）。也就是说，DPO 不再像 SFT 那样只学习“把一个标准答案背下来”，而是学习“在两个回答里，哪个更值得选”。如果模型给 chosen 的概率高于 rejected，就说明它更符合偏好数据的要求。
+用公式表示时，先设当前训练的模型为 πθ，参考模型为 πref，输入为 x，偏好回答为 yw，拒绝回答为 yl。首先，比较当前模型对两个回答的对数概率差：
+log⁡πθ(yw∣x)-log⁡πθ(yl∣x)
+第二，这种偏好不能只看当前模型本身，还要和参考模型进行比较。引入参考模型的目的，是给训练提供一个稳定基线，可以理解为：DPO 不只是要求模型“更喜欢 chosen”，而是要求它“比参考模型更明显地喜欢 chosen”，这样既能利用偏好数据继续优化，又能尽量保持原有模型的语言能力和输出风格。
+考虑到这一层，还需要上面公式的基础上，再减去参考模型的对应差值：
+log⁡πθ(yw∣x)-log⁡πθ(yl∣x)-log⁡πref(yw∣x)-log⁡πref(yl∣x)
+这个量的含义是：当前模型相比参考模型，是否更支持 chosen 胜过 rejected。如果它是正的，说明优化方向是对的；如果它较小甚至为负，说明当前模型还没有学到足够明确的偏好。
+最后，DPO 把这个比较结果放入 sigmoid，并写成标准的对数损失形式：
+LDPO=-log⁡σβlog⁡πθ(yw∣x)-log⁡πθ(yl∣x)log⁡πref(yw∣x)-log⁡πref(yl∣x)
+其中，β 用来控制区分 chosen 和 rejected 的强度。
+整个公式可以概括为一句话：一方面让模型更倾向偏好回答而不是拒绝回答，另一方面又要求这种倾向是在参考模型基础上的“进一步提升”，这就是 DPO 损失的核心设计思路。
+具体代码实现如下所示：
+def _compute_average_log_probability(logits,target_labels,mask:torch.Tensor):
+    """
+    计算logits在target_labels上的平均log概率
+    """
+
+    log_probalitites = torch.log_softmax(logits,dim=-1)
+
+    # 使用gather函数获取target_labels上的log概率
+    gathered_log_probs = torch.gather(
+        log_probalitites,
+        dim=-1,
+        index = target_labels.unsqueeze(2)
+    ).squeeze(2)
+
+    # 对gathered_log_probs进行mask操作，只计算mask=1部分的log概率，
+    masked_log_probs = torch.mul(gathered_log_probs,mask)
+    # 计算每个样本的平均log概率
+    average_log_prob = masked_log_probs.sum(dim=-1) / mask.sum(dim=-1)
+
+    return average_log_prob
+compute_loss公式如下所示：
+def compute_loss(preferred_logits,rejected_logits,reference_preferred_logits,reference_rejected_logits,preferred_labels,rejected_labels,preferred_answer_mask,rejected_answer_mask,beta:float):
+    """
+    DPO损失函数计算：
+        计算单个批次当中，模型生成偏好回答的平均token概率，和模型生成拒绝回答的平均token概率，以及参考模型生成偏好回答的平均token概率，参考模型生成拒绝回答的平均token概率
+    Args:
+        output_logits: 模型输出的logits
+        ref_output_logits: 参考模型输出的logits
+        preferred_labels: 偏好回答labels
+        rejected_labels: 拒绝回答labels
+        assistant_answer_mask: assistant回答的掩码
+    """
+
+    preferred_log_prob = _compute_average_log_probability(preferred_logits,preferred_labels,mask=preferred_answer_mask)
+
+    rejected_log_prob = _compute_average_log_probability(rejected_logits,rejected_labels,mask=rejected_answer_mask)
+
+    reference_preferred_log_prob = _compute_average_log_probability(reference_preferred_logits,preferred_labels,mask=preferred_answer_mask)
+    reference_rejected_log_prob = _compute_average_log_probability(reference_rejected_logits,target_labels=rejected_labels,mask=rejected_answer_mask)
+
+    final = (preferred_log_prob - rejected_log_prob) - (reference_preferred_log_prob - reference_rejected_log_prob)
+
+    loss = -torch.nn.functional.logsigmoid(final * beta)
+
+    step_average_loss = loss.mean()
+
+    return step_average_loss
+微调训练
+DPO训练流程，需要加载两个模型，其中一个为需要更新的模型，另一个为参考模型。
+参考模型的作用仅是输出在给定输入下，原始模型输出偏好回答的概率和输出拒绝回答的概率，作为一个基线，整个训练过程不需要对参考模型的参数进行更新。
+具体训练代码如下所示：
+def train(model,ref_model,tokenizer,config:DPOTrainConfig):
+    """
+    主训练函数
+    Args:
+        tokenizer:
+        config:
+
+    Returns:
+    """
+    # 1、将模型和参考模型移动到指定设备，注意：参考模型需要设置为评估模式，不需要Dropout
+    model.to(config.device)
+    ref_model.to(config.device)
+    model.train()
+    ref_model.eval()
+    training_losses = []
+
+    chosen_input_ids,rejected_input_ids = get_data_ultrafeedback_binarized(config)
+    optimizer = torch.optim.AdamW(model.parameters(),lr=config.max_lr)
+    writer = SummaryWriter(config.log_dir)
+    model.zero_grad()
+    skipped_batches_count = 0
+    import tqdm
+    
+    total_steps = len(chosen_input_ids) // config.batch_size if len(chosen_input_ids) % config.batch_size == 0 else len(chosen_input_ids) // config.batch_size + 1
+    progress_bar = tqdm.tqdm(total=total_steps, desc="step")
+    print(f"总训练步数为{total_steps}")
+
+    for step in range(total_steps):
+        
+        # 1、获取当前批次偏好数据对和拒绝数据对
+        preferred_batch_sequences = chosen_input_ids[step*config.batch_size:(step+1)*config.batch_size]
+        rejected_batch_sequences = rejected_input_ids[step*config.batch_size:(step+1)*config.batch_size]
+        
+        # 2、获取当前批次偏好数据对和拒绝数据对的最大长度
+        preferred_max_length = max([len(sequence["input_ids"]) for sequence in preferred_batch_sequences])
+        rejected_max_length = max([len(sequence["input_ids"]) for sequence in rejected_batch_sequences])
+
+        pad_token_id = tokenizer.pad_token_id
+
+        # 3、分别对偏好数据对和拒绝数据对进行padding
+        preferred_padded_sequences = []
+        for sequence in preferred_batch_sequences:
+            original_sequence_ids = sequence["input_ids"]
+            padding_length = preferred_max_length - len(original_sequence_ids)
+
+            padded_seq = torch.nn.functional.pad(
+                torch.tensor(original_sequence_ids,dtype=torch.long),
+                (0,padding_length),
+                mode="constant",
+                value=pad_token_id
+            ).tolist()
+
+            preferred_padded_sequences.append(padded_seq)
+        
+        preferred_batch_tensor = torch.tensor(preferred_padded_sequences,dtype=torch.long).to(config.device)
+        rejected_padded_sequences = []
+        for rejected_sequence in rejected_batch_sequences:
+            original_sequence_ids = rejected_sequence["input_ids"]
+            padding_length = rejected_max_length - len(original_sequence_ids)
+
+            padded_seq = torch.nn.functional.pad(
+                torch.tensor(original_sequence_ids,dtype=torch.long),
+                (0,padding_length),
+                mode="constant",
+                value=pad_token_id
+            ).tolist()
+
+            rejected_padded_sequences.append(padded_seq)
+
+        rejected_batch_tensor = torch.tensor(rejected_padded_sequences,dtype=torch.long).to(config.device)
+        
+
+        # 4、构建偏好数据对和拒绝数据对的输入和target 张量
+        preferred_model_inputs = preferred_batch_tensor[:,:-1]
+        preferred_target_labels = preferred_batch_tensor[:,1:]
+        rejected_model_inputs = rejected_batch_tensor[:,:-1]
+        rejected_target_labels = rejected_batch_tensor[:,1:]
+
+        # 5、计算偏好数据对和拒绝数据对的padding mask和answer mask，并取交集作为最终计算loss的mask
+        preferred_padding_mask = torch.where(preferred_target_labels == pad_token_id,0,1)
+
+        rejected_padding_mask = torch.where(rejected_target_labels == pad_token_id,0,1)
+
+        preferred_answer_mask = create_answer_mask(
+            preferred_model_inputs,
+            tokenizer=tokenizer
+        )
+
+        rejected_answer_mask = create_answer_mask(
+            rejected_model_inputs,
+            tokenizer=tokenizer
+        )
+
+        preferred_final_mask = preferred_padding_mask * preferred_answer_mask
+        rejected_final_mask = rejected_padding_mask * rejected_answer_mask
+
+        preferred_min_tokens = preferred_final_mask.sum(dim=-1).min().item()
+        rejected_min_tokens = rejected_final_mask.sum(dim=-1).min().item()
+
+        if preferred_min_tokens == 0 or rejected_min_tokens == 0:
+            print(f"在第{step+1}个step中，偏好数据对或拒绝数据对的answer mask中包含了0个token，跳过该批次")
+            progress_bar.update(1)
+            skipped_batches_count += 1
+            continue
+
+        # 6、偏好数据对前向传播，得到logits
+        preferred_logits = model(preferred_model_inputs).logits
+        rejected_logits = model(rejected_model_inputs).logits
+        
+        with torch.no_grad(): # 由于参考模型不参与梯度计算，所以需要在no_grad()上下文管理器中进行前向传播
+            reference_preferred_logits = ref_model(preferred_model_inputs).logits.detach() # 参考模型对偏好数据对的logits，需要detach()出来，因为后面需要拿这个结果去计算loss，所以需要从计算图中分离出来
+            reference_rejected_logits = ref_model(rejected_model_inputs).logits.detach() # 参考模型对于拒绝数据对的logits计算，类似
+        
+
+        # 根据logits来计算log_prob
+
+        step_average_loss = compute_loss(preferred_logits=preferred_logits,
+                     rejected_logits=rejected_logits,
+                     reference_preferred_logits=reference_preferred_logits,
+                     reference_rejected_logits=reference_rejected_logits,
+                     preferred_labels=preferred_target_labels,
+                     rejected_labels=rejected_target_labels,
+                     preferred_answer_mask=preferred_final_mask,
+                     rejected_answer_mask=rejected_final_mask,
+                     beta=config.beta
+                     )
+        
+        step_average_loss.backward()
+        current_learning_rate = cosine_decay(
+            step,
+            warmup_ratio=config.warmup_ratio,
+            total_steps=total_steps,
+            max_lr=config.max_lr,
+            min_lr=config.min_lr
+        )
+        
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = current_learning_rate
+        
+        writer.add_scalar("train_lr",current_learning_rate,step+1)
+        optimizer.step()
+        optimizer.zero_grad()
+        progress_bar.update(1)
+        progress_bar.set_postfix(loss=f"{step_average_loss.detach().item():.4f}", lr=f"{current_learning_rate:.2e}")
+        
+        
+        training_losses.append(step_average_loss.detach().item())
+        
+        should_log = (step + 1) % config.logging_iter == 0 or (step + 1) == total_steps
+        if should_log:
+            recent_losses = training_losses[-config.logging_iter:]
+            recent_average_loss = np.nanmean(recent_losses)
+
+            current_time = time.strftime("%Y-%m-%d %H:%M:%S")
+            
+            print(
+                f"时间：{current_time} | "
+                f"步数：{step}/{total_steps} | "
+                f"最近{len(recent_losses)}步平均损失：{recent_average_loss:.4f} | "
+                f"当前学习率：{current_learning_rate:.2e}"
+            )
+            writer.add_scalar("train_loss",recent_average_loss,step)
+    
+    print("训练完成")
+print("DPO训练完成")
+参数高效微调
+前面两种微调方式，都是对所有参数进行调整，这种方式所占用的资源量非常高，本节首先介绍微调过程中的显存消耗构成，再来介绍两种参数高效微调方法。
+显存消耗构成
+在对大语言模型（LLM）进行微调时，显存（VRAM）的消耗主要由以下五部分组成：模型参数（Model Weights）、梯度（Gradients）、优化器状态（Optimizer States）、激活值（Activations） 以及 其他运行时开销（Runtime Overhead）。
+模型参数（Model Weights）
+模型参数指网络中所有可训练权重（如注意力投影矩阵、前馈网络权重等）。在训练过程中，这些参数需常驻显存，用于前向传播与反向传播计算。参数所占显存与模型总参数量和存储精度直接相关。
+具体计算公式如下：
+VRAMparams=Nparams×Bparam_dtype
+其中：
+Nparams：模型总参数数量（例如 7B = 7×109）
+Bparam_dtype：每个参数所占字节数（如 FP16 为 2 字节，FP32 为 4 字节）。
+梯度（Gradients）
+在反向传播过程中，每个可训练参数都会计算对应的梯度。梯度张量的形状与参数一致，通常以与参数相同的精度存储，因此其显存占用通常与模型参数相当。
+计算公式如下：
+VRAMgrads=Nparams×Bparam_dtype
+优化器状态（Optimizer States）
+现代优化器（如 AdamW）为每个可训练参数维护额外的状态变量（例如一阶矩和二阶矩）。这些状态通常以较高精度（如 FP32）存储，显存占用往往是模型参数的数倍，是微调中显存消耗的主要来源之一。
+计算公式为：
+VRAMoptimizer=2×Nparams×4
+回顾一下AdamW的计算公式，假设在时间步 t，参数为 θt，损失函数关于参数的梯度为 gt：
+第一步：计算一阶矩估计（动量）
+mt=β1mt-1+(1-β1)gt
+第二步：计算二阶矩估计
+vt=β2vt-1+(1-β2)gt2
+第三步：偏差修正
+m^t=mt1-β1t
+v^t=vt1-β2t
+第四步：参数更新
+θt+1=θt-η⋅m^tv^t+ϵ-η⋅λ⋅θt
+激活值（Activations）
+激活值是前向传播中各层输出的中间结果，需在反向传播时用于梯度计算。其显存占用与模型深度、隐藏层维度、输入序列长度、批次大小呈正相关。
+激活值占用的显存难以精确预估，粗略估算公式如下：
+VRAMactivations≈b×s×h×l×Bact_dtype×k
+其中：
+b：批次大小
+s：序列长度
+h：隐藏维度
+l：模型层数
+Bact_dtype：激活精度字节数（通常为 2，BF16）
+k：补偿因子（经验值，通常在 10–30 之间）
+其他运行时开销（Runtime Overhead）
+包括CUDA 内核临时内存、分布式训练中的通信缓冲区等。
+LoRA微调
+参数高效微调（Parameter-Efficient Fine-tuning, PEFT）是一系列微调方法，其核心思想是仅更新少量参数或引入少量可训练模块，在显著降低资源消耗的同时，高效适配目标任务。目前，最先进的PEFT方法已经能实现与全参微调相当的性能。
+PEFT 的兴起可追溯至 2019 年前后。当时以 BERT、GPT-2 为代表的预训练模型规模迅速扩大，传统全参数微调的资源成本逐渐难以承受。伴随模型规模持续膨胀，这种矛盾愈发凸显，由此推动了 PEFT 技术的快速发展，形成了包括 Prompt Tuning、Prefix Tuning、P-Tuning、Adapter、LoRA 等多条技术路线，如下图所示：
+
+在众多方法中，LoRA（Low-Rank Adaptation）因其结构简洁、训练高效、稳定，已成为当前大语言模型监督微调（SFT）的主流选择；其量化版本 QLoRA （Quantized Low-Rank Adaptation）进一步融合量化技术，将微调门槛降至消费级 GPU 也可运行的水平。
+概述及核心原理
+LoRA（Low-Rank Adaptation）是一种高效且广泛使用的参数高效微调方法，由微软研究院于 2021 年提出。因其训练成本低、适配能力强、推理无额外开销等优势，已成为当前大语言模型监督微调（SFT）中最广泛使用的技术。
+原理
+在传统的全参数微调（Full Fine-tuning）中，模型中的某个权重矩阵 W0∈Rd×k（例如 Transformer 中的注意力投影矩阵）会在训练过程中被更新为：
+W=W0+ΔW,
+其中 ΔW是微调阶段需要学习的完整增量矩阵。
+LoRA 的作者在实践中观察到：ΔW 往往具有低秩结构，也就是说它的有效自由度远低于其表面维度。基于这一关键现象，LoRA 将 ΔW近似分解为两个低秩矩阵的乘积：
+ΔW≈AB,A∈Rd×r,  B∈Rr×k,
+其中 r≪min⁡(d,k)，通常取远小于原始维度的数值。这样，微调后的权重矩阵可写为：
+W=W0+AB
+如下图所示：
+
+在训练过程中，LoRA 完全冻结原始权重 W0，仅对新增的低秩矩阵 A和 B进行优化。这大幅减少了需要更新的参数量，同时也避免了对大规模模型权重的直接修改，使微调过程更加轻量、高效。
+在推理阶段，低秩增量 AB可以无缝合并回原始权重 W0中，不会引入额外的计算复杂度，因此 LoRA 的高效性不仅体现在训练中，也体现在推理过程中。如下图所示：
+
+由于秩 r很小，LoRA 的参数开销和计算成本都极低。例如，对 d=k=4096的权重矩阵进行全参数更新需要约 16M 个参数，而采用 LoRA（如 r=8）时，仅需：
+4096×8+8×4096=65,536
+个参数，占原始权重的仅约 0.4%。这种数量级的压缩使得在有限资源下微调大模型成为可能，也使得在多个任务之间共享底层模型、仅保存轻量级 LoRA 适配器成为现实。
+插入位置
+LoRA 通常插入模型中的线性层。在主流 Decoder-only 模型中，最常用的是对注意力层的 q_proj 和 v_proj 插入 LoRA，原因如下：
+Query 和 Value 对任务语义最敏感；
+仅插这两处即可接近全参微调性能；
+参数和显存开销最小。
+如需更强表达能力，也可扩展至 k_proj、o_proj 或 FFN 层，但会增加成本。
+工程实现
+在工程中实现中，通常会额外加入两个关键组件：
+缩放系数（α）
+为了控制 LoRA 增量在训练初期的影响力，并在不同秩 r下保持数值稳定性，通常会在增量上加入缩放系数，使前向计算变为：
+W=W0+αr AB
+通常情况下，可设置α和r的值保持一致，当想要训练过程更加激进时，也可设置为2r等。
+ LoRA Dropout
+为提升泛化能力，减轻小数据集上的过拟合，通常会对LoRA Layer的输入进行dropout。
+实战
+TRL库概述
+TRL 库提供了一系列 Trainer，用于实现大语言模型的监督微调（SFT）和对齐训练（如 RLHF、DPO 等），并对常见训练流程进行了高度封装，便于快速实验与工程落地。
+使用TRL进行微调时，需要先配置特定Trainer实例，再通过特定的Config类构建训练参数。配置完成后，即可调用Trainer实例train()方法进行微调。训练结束后，也可通过trainer来对模型进行保存。
+
+PEFT库概述
+PEFT 是 Hugging Face 官方维护的参数高效微调库。它用于在不完整微调整个大模型参数的情况下，仅训练少量新增参数，从而降低显存、计算和存储成本。PEFT 与 Transformers、Accelerate等库集成，提供了更便捷的方式来加载、训练大型模型，并将其用于推理。 
+在使用 PEFT 时，通常会先定义一个 PeftConfig，例如 LoraConfig，然后通过 get_peft_model(model, peft_config) 将原始模型包装为 PeftModel。与原始模型相比，PeftModel 的主要变化包括： 
+冻结基座模型的大部分或全部参数，避免完整微调整个模型； 
+根据配置添加可训练的 PEFT 参数，例如 LoRA 会在指定线性层中引入低秩矩阵 A、B； 
+调用 model.save_pretrained() 时，默认主要保存 adapter 权重和配置文件，而不是保存完整的基座模型权重。
+SFT的LoRA微调
+在了解了SFT和PEFT库之后，就可以开始基于这两个库来实现一个SFT的LoRA微调。
+具体流程如下：
+LoraConfig实例构建
+构建LoraConfig实例代码实现如下：
+from peft import LoraConfig
+peft_config = LoraConfig(
+    r=4,
+    lora_alpha=8,
+    lora_dropout=0.05,
+    bias="none",
+    target_modules="all-linear",
+    task_type="CAUSAL_LM"
+)
+调用get_peft_model方法
+调用get_peft_model，传入model以及peft_config：
+from peft import get_peft_model
+lora_model = get_peft_model(model=model,peft_config=peft_config)
+在SFTTrainer当中传入lora_model
+在SFTTrainer中传入新的lora_model实例，再构造SFTConfig的实例，即可实现LoRA高效微调：
+import os
+
+from transformers import AutoModelForCausalLM,AutoTokenizer
+from datasets import load_dataset
+from trl.trainer.sft_config import SFTConfig
+from trl.trainer.sft_trainer import SFTTrainer
+from peft import LoraConfig
+model_name = 'model/Qwen3-0.6B'
+model = AutoModelForCausalLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+dataset_dict = load_dataset("json",data_files={"train":"data/keywords_data_train.jsonl","test":"data/keywords_data_test.jsonl"})
+
+def map_func(example):
+
+    conversation = example["conversation"]
+    messages = []
+    for turn in conversation:
+        messages.append({"role":"user","content":turn["human"]})
+        messages.append({"role":"assistant","content":turn["assistant"]})
+    
+    return {"messages":messages}
+
+dataset_dict = dataset_dict.map(function=map_func,batched=False,remove_columns=["dataset","conversation","category","conversation_id"])
+
+peft_config = LoraConfig(
+    r=4,
+    lora_alpha=8,
+    lora_dropout=0.05,
+    bias="none",
+    target_modules="all-linear",
+    task_type="CAUSAL_LM"
+)
+training_args = SFTConfig(
+    output_dir="./finetuned/Qwen3-0.6B-SFT-LoRA",
+per_device_train_batch_size=4,
+gradient_accumulation_steps=3,
+    max_steps=1000,
+    learning_rate=2e-4,
+    logging_steps=100,
+    warmup_ratio=0.1,
+    eval_strategy="steps",
+    eval_steps=100,
+    load_best_model_at_end=True,
+    bf16=True,
+    save_total_limit=2,
+save_steps=100,  
+report_to=["tensorboard"]
+)
+
+trainer = SFTTrainer(
+    model=lora_model,
+    args=training_args,
+    train_dataset=dataset_dict["train"],
+    eval_dataset=dataset_dict["test"],
+    processing_class=tokenizer
+)
+trainer.train()
+trainer.save_model('./finetuned/Qwen3-0.6B-sft-lora-best')
+DPO的LoRA微调
+Qlora微调
+概述及核心原理
+QLoRA（Quantized Low-Rank Adaptation）是 LoRA 的量化增强版本，由华盛顿大学和微软研究院于 2023 年提出。QLoRA 在 LoRA 的基础上引入 4-bit 量化技术，在几乎不损失性能的前提下，将大语言模型微调的硬件门槛大幅降低，使得数十亿参数级别的模型可在单张消费级 GPU（如 RTX 3090/4090）上完成高效微调。
+QLoRA 的核心思想是：先对预训练模型权重进行 4-bit 量化以压缩显存占用，再在其上应用 LoRA 进行参数高效微调。
+
+整个流程包含三个关键技术组件：
+4-bit NormalFloat（NF4）量化
+量化（Quantization） 是一种通过降低数值精度（例如从 16-bit 降至 4-bit）来压缩模型、节省显存的技术。传统 4-bit 量化通常采用如下流程：
+使用权重的最大绝对值（absmax）将权重归一化到区间 [-1,1]；
+将该区间均匀划分为 24=16个等距格点；
+每个权重被映射到最近的格点，并以对应的 4-bit 索引存储。
+具体如下图所示：
+
+然而，大语言模型的权重分布并非均匀，而是近似服从标准正态分布（均值为 0，方差为 1）。在这种分布下，传统均匀量化存在明显缺陷：
+在权重密集的 0 附近，格点相对不足，导致量化误差较大；
+在权重稀疏的两端，格点又相对冗余，造成信息利用率低下。
+为解决这一问题，QLoRA 提出了 4-bit NormalFloat（NF4）量化，专为标准正态分布设计：
+将标准正态分布按累积概率均分为 15 个等概率区间；
+每个区间选取其中位数作为该区间的量化代表值。
+这样得到的量化格点在 0 附近更密集，在两端更稀疏，与权重的实际分布高度匹配，从而显著降低量化误差。
+双重量化（Double Quantization）
+在权重量化过程中，为了保证精度，通常的做法是让每 64 个权重共享一个 32-bit 的缩放因子（Absmax）。虽然这种方法能有效控制量化误差，但这些大量的缩放因子自身也会带来显著的存储开销。
+为缓解这一问题，QLoRA 提出了“双重量化”：不仅对模型权重量化，更对这些高精度的缩放因子进行二次量化。其实现方式是，将缩放因子以 256 个为一组，使用 8-bit 数据类型进行二次量化。如此一来，量化所需的辅助存储空间得以大幅减少。
+分页优化器（Paged Optimizers）
+在微调过程中，优化器状态（如 Adam 的一阶矩、二阶矩）往往比模型权重本身更占显存。即使使用 LoRA 或 QLoRA，大量优化器状态仍可能导致显存不足，尤其是在消费级 GPU 上。
+为解决这一瓶颈，QLoRA 使用了 分页优化器（Paged Optimizer） 技术，使优化器状态能够按需加载、按需卸载，从而更加高效地利用显存。
+其核心思路是：
+将优化器状态拆分为多个小块（pages）；
+仅在需要更新某层时，临时把对应 page 载入到显存；
+更新完成后立即将该 page 写回内存，并从显存中释放；
+借助分页机制，显存只需容纳当前正在使用的优化器状态，显存占用随之显著降低。这一技术让大型模型的 QLoRA 微调能够在更低显存环境下高效运行，并最大化消费级 GPU 的可用算力。
+实战
+BitsAndBytes库的概述
+Bitsandbytes库用于对模型进行量化。使用Bitsandbytes库，来完成QLoRA微调，整体遵循以下步骤：
+构建量化配置实例：使用transformers.BitsAndBytesConfig定义量化配置；
+加载模型时传入量化配置：使用AutoModelForCausalLM.from_pretrained加载时传入配置，加载量化模型；
+量化模型预处理：调用prepare_model_for_kbit_training完成量化模型预处理；
+后续过程与LoRA微调一致。
+SFT的QLoRA微调
+本小节使用TRL+PEFT+BitsAndBytes来实现，对Qwen3-8B模型的微调。
+使用Bitsandbytes库以及PEFT来实现QLora，截止到量化模型预处理阶段，代码如下：
+from transformers import AutoModelForCausalLM,AutoTokenizer,BitsAndBytesConfig
+from peft import prepare_model_for_kbit_training
+import torch
+quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_compute_dtype=torch.bfloat16,
+)
+model_name = "model/Qwen3-8B"
+model = AutoModelForCausalLM.from_pretrained(model_name,quantization_config=quantization_config) 
+model = prepare_model_for_kbit_training(model)
+分布式训练
+当我们处于多卡环境下，并且想通过多卡，来加快微调速度时，可以实现分布式训练。本节首先介绍分布式训练的一种最核心的理论，数据并行的基本原理，然后再介绍对该理论的具体实现：ZeRO技术的核心原理，并完成一个实战。
+数据并行
+数据并行（Data Parallelism）的核心思想是在多张 GPU 上各放置一份完整的模型副本，并让不同 GPU 并行处理不同的数据子集。这样做的主要目的，是提升训练吞吐量，从而加快整体训练速度。
+
+数据并行训练过程中，需要保证各副本参数一致，具体训练流程如下：
+每个 GPU 独立处理本地数据子集，完成前向计算、反向传播并得到本地梯度。
+跨 GPU 进行梯度汇总，将所有梯度进行平均，使每个 GPU 获得相同的全局梯度。
+各 GPU 使用相同的全局梯度独立更新参数，从而保证所有模型副本继续保持一致。
+其中，步骤 2 涉及大量梯度数据的跨设备传输，尤其在大语言模型（LLM）参数规模庞大时，通信开销可能成为性能瓶颈。因此，为缓解通信压力，这一步骤通常依赖于高效的集合通信算法实现，其中 AllReduce 是目前最主流且有效的实现方式，其原理如下图所示：
+
+ZeRO技术
+概述及核心原理
+ZeRO（Zero Redundancy Optimizer）是由微软研究院提出一套分布式训练技术。它可视为对传统数据并行的深度增强。
+在标准数据并行中，每个设备都保存完整的模型状态，导致跨设备的冗余存储，并严重限制了可训练模型的规模。
+ZeRO 的核心思想是：分片存储、按需加载。它不再让每块 GPU 都完整保存一整套模型状态，而是将模型状态切分成多个分片，分布式地存储在不同的 GPU 上；在执行某一层的前向或反向传播时，再通过高效的集体通信，按需、临时地从其他设备拉取当前计算所需的分片参数，并在用完后立即释放。
+通过这种方式，ZeRO 在保持数据并行高计算效率的前提下：
+消除了跨设备存储冗余
+显著减少了每块 GPU 的显存占用
+使训练的模型规模远超单卡显存限制
+因此，ZeRO 成功结合了数据并行的高吞吐与易扩展性和模型并行的内存节省效果，是训练超大规模模型不可或缺的基础技术。
+训练过程中，需要保存和维护的模型状态主要由以下三部分组成：
+➢ 模型参数（Parameters）：网络各层的权重与偏置；
+➢ 梯度（Gradients）：反向传播过程中为更新参数而计算的梯度；
+➢ 优化器状态（Optimizer States）：如 Adam 的一阶矩、二阶矩等辅助变量。
+针对上述部分模型状态，ZeRO 将分片策略划分为三个逐级递进的阶段：
+ZeRO-1：优化器状态分片
+ZeRO-2：优化器状态 + 梯度分片
+ZeRO-3：优化器状态 + 梯度分片 + 模型参数分片
+
+这种分阶段设计的核心意义在于：为显存节省与通信开销之间提供可调节的平衡点。用户可依据硬件资源、模型规模与训练效率等需求，灵活选择不同的分片级别——阶段越高，单卡显存占用越低，但通信成本随之上升；阶段越低，实现更简单、通信压力更小，但显存节省有限。
+这种递进式结构使 ZeRO 能够在从中小规模到超大规模的不同训练场景中都保持良好的适配性与扩展性。
+ZeRO的具体实现细节可参考HYPERLINK "https://www.microsoft.com/en-us/research/blog/zero-deepspeed-new-system-optimizations-enable-training-models-with-over-100-billion-parameters/"官方博客。
+实战
+DeepSpeed库概述
+DeepSpeed 是微软开源的深度学习优化库，而 ZeRO（零冗余优化器）是其内置的核心显存优化技术，二者是框架与核心算法的关系。DeepSpeed 则作为完整工具库实现了 ZeRO，同时还包含混合精度训练、Offload、推理加速等其他能力，ZeRO 只是其最核心的组成部分之一。
+直接使用DeepSpeed库，来实现ZeRO分布式训练，其整体的步骤，如下：
+编写ZeRO配置文件：通过json指定需要使用的ZeRO阶段，及其他相关配置
+初始化DeepSpeed引擎：在代码中，使用deepspeed.initialize来创建优化器等，来替代原始优化器
+使用deepspeed CLI来启动分布式训练
+Accelerate库概述
+能否不去专门学习DeepSpeed当中，配置文件的编写，以及deepspeed库的使用，就能够实现一个ZeRO训练？答案是可以的，我们可以使用Accelerate库来实现。
+Accelerate 是 Hugging Face 提供的分布式训练工具库，主要用于简化 PyTorch 代码在单卡、多卡和多机环境中的运行。
+它可以自动处理设备分配、多进程启动、数据划分、梯度同步和混合精度等工作。使用 TRL 或 Transformers 的 Trainer 时，由于内部已经集成了 Accelerate，通常不需要修改训练代码，只需要调整启动方式或配置文件即可。
+Accelerate 还可以接入 DeepSpeed 和 FSDP。DeepSpeed前面已有介绍。而FSDP 则是 PyTorch 原生提供的全分片数据并行方案。它同样会将模型参数、梯度和优化器状态拆分到不同 GPU 上，使多张 GPU 共同承担模型的显存开销。
+SFT三卡全参微调
+使用Accelerate来做SFT三卡微调，只需要通过TRL写好微调脚本，再通过Accelerate CLI进行启动即可。
+Accelerate启动命令如下所示：
+accelerate launch --config-file xxx.yaml train.py
+其中config file来自于accelerate的交互式命令所得：
+accelerate config
+在整个交互式过程结束后，会生成一个yaml文件，在生成的yaml文件当中，指定了分布式训练的相关配置，以及使用DeepSpeed等分布式训练后端的相关配置，如下所示：
+
+而训练脚本train.py脚本其中编写方式和直接使用TRL时没有任何区别。
+以下为启动过程和训练过程的概述：
+accelerate launch 会读取分布式配置，设置各个进程所需的环境信息，并拉起多个训练进程。通常每个进程负责一张 GPU，并独立执行同一份训练代码。
+在每个进程中，创建 Trainer 时，会进一步创建 Accelerator 实例。Accelerator 根据启动时注入的环境信息，确定当前进程使用的设备、进程编号以及采用的分布式训练方案。
+当使用 DeepSpeed 时，Trainer 和 Accelerator 会读取 DeepSpeed 配置，并将 batch size、梯度累积步数、学习率和混合精度等配置与训练参数进行对齐。
+正式训练前，Accelerator 会对模型、优化器和学习率调度器进行准备。使用 DeepSpeed 时，模型会被封装成 DeepSpeed Engine，优化器和调度器也会交由 DeepSpeed 封装或管理。
+后续训练过程中，ZeRO 分片、梯度同步、参数收集和优化器更新等工作主要由 DeepSpeed 负责组织；GPU 之间的实际通信通常通过 PyTorch distributed，并使用 NCCL 作为通信后端。 
+
+其他微调库的介绍
+当前主流的微调库，除了有前面所讲到的TRL，PEFT等库以外，还有其他常用的库，本章节对这些库做一个介绍。
+Unsloth
+概述
+Unsloth 是一个面向本地硬件的开源大模型训练与运行框架，主打更快训练、显存占用更低，同时保持对 Hugging Face 工作流的兼容。
+Unsloth的核心优势有如下两点：
+手动编写CUDA Kernel：Unsloth 没有完全依赖 PyTorch 的原生算子，而是针对 Transformer 架构中最耗时的部分（如 RoPE 嵌入、交叉熵损失计算、注意力机制）手动编写了高度优化的 CUDA 内核；
+深度适配主流架构：Unsloth针对主流模型Mistral、Gemma、Qwen、DeepSeek等特定模型架构进行了专门优化。这意味着它在这些模型上的表现远优于通用方案。
+实战
+本节实现一个基于Unsloth的SFT QLoRA微调训练。
+
+Llama-Factory
+LLaMA-Factory 是一个简单易用且高效的大型语言模型训练与微调平台。通过 LLaMA-Factory，可以在无需编写任何代码的前提下，完成上百种模型的微调。
+安装LLaMA-Factory
+下载源码
+使用git下载：
+git clone https://github.com/hiyouga/LLaMA-Factory.git
+autodl内置代理加速：HYPERLINK "https://www.autodl.com/docs/network_turbo/"https://www.autodl.com/docs/network_turbo/
+配置代理加速：
+source /etc/network_turbo
+取消代理加速：
+unset http_proxy && unset https_proxy
+安装依赖
+使用UV，创建一个python 3.12环境：
+uv venv --python 3.12
+激活环境：
+source .venv/bin/activate
+安装依赖：
+uv pip install -e . -i https://pypi.tuna.tsinghua.edu.cn/simple
+验证安装成功：
+llamafactory-cli version
+启动LLaMA-Factory
+启动webui：
+llamafactory-cli webui
+不占用前台的方式启动：
+nohup llamafactory-cli webui >llama_factory.log 2>&1 &
+看到“Running on local URL:  http://0.0.0.0:7860”即启动成功。
+如果使用autodl服务器启动，本地电脑访问需开启SSH隧道，在本地电脑执行：
+ssh -CNg -L 7860:127.0.0.1:7860 root@connect.nmb2.seetacloud.com -p 16652
+也可以使用AutoDL提供的图形化界面工具配置代理隧道：
+
+浏览器打开http://localhost:7860/
+
+准备数据集
+LLaMA-Factory目前支持 Alpaca 格式和 HYPERLINK "https://llamafactory.readthedocs.io/zh-cn/latest/getting_started/data_preparation.html" \l "sharegpt"ShareGPT 格式的数据集。我们自己整理好格式的数据需要添加到数据集信息中。
+处理数据格式
+from datasets import load_dataset
+
+def convert_to_qwen_format(examples):
+    conversations = []
+    # 遍历每个对话样本,注意开启batch时，会自动套一层list
+    for conv_list in examples["conversation"]:
+        # 重建符合Qwen3标准的消息结构
+        for conv in conv_list:
+            conversations.append([
+                {"role": "user", "content": conv['human'].strip()},
+                {"role": "assistant", "content": conv['assistant'].strip()}
+            ])
+    return {"messages": conversations}
+
+if __name__ == '__main__':
+
+    dataset = load_dataset("json", data_files="data/keywords_data_train.jsonl", split="train")
+    # 格式化数据为 Chatgpt 格式
+    dataset = dataset.map(
+        convert_to_qwen_format,
+        batched=True,
+        remove_columns=dataset.column_names
+    )
+    dataset.to_json("data/keywords_data_sharegpt.jsonl",force_ascii=False)
+
+添加数据集
+拷贝数据文件到data目录中
+cp keywords_data_sharegpt.jsonl /root/autodl-tmp/LLaMA-Factory/data/
+	修改dataset_info.json文件，添加数据集信息
+"keyword_extract": {
+  "file_name": "keywords_data_sharegpt.jsonl",
+  "formatting": "sharegpt",
+  "columns": {
+    "messages": "messages"
+  },
+  "tags": {
+    "role_tag": "role",
+    "content_tag": "content",
+    "user_tag": "user",
+    "assistant_tag": "assistant"
+  }
+},
+添加完数据集信息后，即可在webui界面查看到已添加的数据集
+SFT-LoRA微调
+配置模型
+LLaMa-Factory可使用提前下载好的模型。配置提前已经下载好的模型，模型名称选择Custom，模型路径配置本地路径即可：
+
+配置使用LoRA
+在微调方法栏，配置使用lora，即可启用LoRA微调。
+
+配置训练轮数和最大样本数
+配置训练总轮数以及每个数据集最多使用的样本数。
+
+配置保存位置
+设置输出目录，后续训练过程中的检查点以及其他相关数据，都会保存至该目录当中去。
+
+模型权重导出
+通过LLaMA-Factory，可将训练好后得到的LoRA适配器参数和基座模型参数进行合并导出：
+
+LLM推理部署
+vLLM模型部署及调用
+简介
+vLLM 是一个面向大语言模型推理的高性能推理框架，专为大规模并发请求优化，底层基于Pytorch 构建。
+vLLM项目主页：https://docs.vllm.ai/en/latest/index.html
+Github开源地址：https://github.com/vllm-project/vllm
+从各种基准测试数据来看，同等配置下，使用 vLLM 框架与 Transformer 等传统推理库相比，其吞吐量可以提高一个数量级，这归功于以下几个特性：
+高级 GPU 优化：利用 CUDA 和 PyTorch 最大限度地提高 GPU 利用率，从而实现更快的推理速度。
+高级内存管理：通过PagedAttention算法实现对 KV cache的高效管理，减少内存浪费，从而优化大模型的运行效率。
+批处理功能：支持连续批处理和异步处理，从而提高多个并发请求的吞吐量。
+安全特性：内置 API 密钥支持和适当的请求验证，不像其他完全跳过身份验证的框架。
+易用性：vLLM 与 HuggingFace 模型无缝集成，支持多种流行的大型语言模型，并兼容 OpenAI 的 API 服务器。
+安装
+环境要求：
+OS: Linux
+Python: 3.9 -- 3.12
+系统cuda toolkit版本：13.0
+创建并激活vllm环境
+uv venv --python 3.12
+安装vllm
+uv pip install vllm --torch-backend auto -i https://pypi.tuna.tsinghua.edu.cn/simple
+查看安装信息
+uv pip show vllm
+模型部署
+单机单卡部署
+启动命令：
+vllm serve /root/autodl-tmp/models/Qwen3-8B-sft-all --served-model-name Qwen3-8B-sft-all --max-model-len 32K
+注意：小写的k，单位是1000；大写的K，单位是1024。
+更多选项：https://docs.vllm.ai/en/stable/cli/serve.html#modelconfig
+正式运行应后台运行：
+nohup vllm serve /root/autodl-tmp/models/Qwen3-8B-sft-all --served-model-name Qwen3-8B-sft-all --max-model-len 32K >vllm.log 2>&1 &
+单机多卡部署
+对于大型模型，单机单卡无法完成部署时，可以在多张卡上进行部署。vLLM提供了张量并行，流水线并行，专家并行等多种模式。
+首先，我们学习下，这几种并行方式的核心原理，再来看具体实操。
+流水线并行
+张量并行
+专家并行
+在单节点多卡下，一般情况下，优先考虑使用张量并行（对于MoE架构，考虑专家并行），只有大模型过大，单纯张量并行仍无法放置整个模型时，可以考虑再使用流水线并行。
+在多节点下，因为跨节点的通信耗时较高，而张量并行又涉及到层内部做all-reduce/all-gather等操作，因此一般在单节点内做张量并行，跨节点间做流水线并行。
+单机双卡，使用张量并行部署命令如下：
+vllm serve /root/autodl-tmp/models/Qwen3-14B --served-model-name Qwen3-14B --max-model-len 32K --tensor-parallel-size 2
+对于MoE模型，开启专家并行的命令如下：
+vllm serve /root/autodl-tmp/models/Qwen3-30B-A3B --served-model-name Qwen3-30B-A3B --max-model-len 32K --tensor-parallel-size 2 --enable-expert-parallel
+模型调用
+快速测试
+curl http://localhost:8000/v1/chat/completions \
+-H "Content-Type: application/json" \
+-d '{
+	"model": "Qwen3-8B-sft-all",
+	"messages": [
+		{"role": "system", "content": "你是个乐于助人的助理。"},
+		{"role": "user", "content": "我的猫死了，我很难过。"}
+	]
+}'
+代码调用（openai库）
+安装openai库
+uv pip install langchain-core langchain-openai -i https://pypi.tuna.tsinghua.edu.cn/simple
+测试代码
+from openai import OpenAI
+
+# 连接本地
+client = OpenAI(
+    base_url="http://localhost:8000/v1/",
+    api_key="none"  # 占位符，可忽略
+)
+
+# 多轮对话
+response = client.chat.completions.create(
+    model="Qwen3-8B-sft-all",  # 指定模型,必须与启动vllm时指定的名字一致
+    messages=[
+        {"role": "user", "content": "量子计算对RSA加密的威胁与应对策略,请展示你的推理过程在think标签中"}
+    ],
+    extra_body={
+        "chat_template_kwargs": {"enable_thinking": False}  # 关键参数
+    }
+)
+
+# print(response)
+print(response.choices[0].message.content)
+
+Langchain调用
+安装langchain库
+uv pip install langchain-core langchain-openai -i https://pypi.tuna.tsinghua.edu.cn/simple
+测试代码
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+
+llm = ChatOpenAI(
+    model="Qwen3-8B-sft-all",
+    base_url="http://localhost:8000/v1/",
+    api_key="none",
+    temperature=0)
+
+# 构建消息（支持多角色）
+messages = [
+    SystemMessage(content="你是一个专业的技术助手，回答需简洁准确"),
+    HumanMessage(content="什么是LangChain")
+]
+
+# 调用模型获取响应
+response = llm.invoke(messages)
+print(response.content)
+推理框架压测
+对于部署之后的服务，可以通过evalscope进行压力测试，判断当前系统，其所能够承受的并发数和吞吐量等情况。
+推理框架简介
+本节对于推理框架具体所解决的问题，以及其内部的基本机制做一个简要介绍。
+推理框架所解决的问题
+推理框架主要解决了如下问题：
+当多个生成请求同时到来时，如何高效调度推理任务，保证服务稳定运行？
+在长上下文与高并发场景下，如何更高效地管理显存，尤其是 KV Cache？
+PagedAttention
+PagedAttention 是 vLLM 提出的一种 attention 计算与 KV Cache 管理机制，核心目标是提高 KV Cache 的显存利用率，减少由于请求长度不一致、动态生成和显存碎片带来的浪费。
+在 PagedAttention 中，系统会根据当前设备可用于 KV Cache 的显存容量，预先分配一块 KV Cache 显存池，并将其划分为多个固定大小的 block。每个 block 可以保存固定数量 token 的 K/V 向量，例如一个 block 可以配置为保存 16 个 token 的 K/V。这里的 block 类似操作系统分页机制中的物理页，是实际存放在 GPU 显存中的 KV Cache 空间。
+Block Manager 负责管理这些 KV Cache block 的分配和回收，包括哪些 block 处于空闲状态，哪些 block 已经被某些序列占用。新的序列到来后，会通过 Block Manager，根据 prompt token 数量为其分配足够的 block，用于保存 prefill 阶段产生的 KV Cache。在后续 decode 过程中，随着序列不断生成新的 token，如果当前已分配的 block 不足，系统会继续向 Block Manager 申请新的 block。当序列生成完成后，其占用的 block 会被释放，重新回到空闲池中，供后续请求复用。
+通过这种方式，一个序列的 KV Cache 在逻辑上仍然对应一段连续增长的 token 序列，但在物理显存中并不要求连续存放。序列只需要维护从逻辑 block 到物理 block 的映射关系（block_table）。Attention 计算时，kernel 会根据这张 block table 找到每个 token 对应的实际 KV Cache 位置，从而读取或写入对应 block 中的 K/V 向量。
+基于 block 化的 KV Cache 管理，vLLM 还可以进一步支持前缀缓存。对于多个请求，如果它们具有完全相同的 token 前缀，例如使用相同的 System Message，那么这些前缀对应的 KV Cache block 可以被复用，而不必为每个请求重复计算和存储。此时系统通常需要为共享的 block 维护引用计数，只有当所有引用这些 block 的序列都结束或不再需要它们时，相关 block 才会被释放。
+调度器与连续批处理
+vLLM 等推理框架通常会使用调度器（Scheduler）来管理不断到来的请求。Scheduler 会维护请求状态，例如 waiting 队列和 running 队列。新的请求到来后，通常会先进入 waiting 队列；当某个 waiting 请求被 Scheduler 选中，并且成功分配到本轮所需的 KV Cache block 后，它就会被加入 running 队列。需要注意的是，进入 running 并不意味着该请求已经完成了完整 prefill；如果 prompt 较长或本轮token budget 不足，该请求可能仍处于 chunked prefill 阶段，并在后续多个 step 中继续完成 prefill。
+  Scheduler 体现的是 Continuous Batching 的思想。传统 batching 通常是静态的：一组请求组成 batch 后，会从 prefill 到 decode 绑定在一起执行，直到这一批请求全部完成后，才会处理下一批请求。而在 Continuous Batching 中，batch 是动态变化的：新的请求可以持续进入系统，已经在运行的请求可以继续参与计算，完成的请求可以随时退出。因此，不同调度轮次中的 batch 可能包含不同的请求。
+  在 vLLM中，推理过程由 Scheduler 一轮一轮 step 推进。每一轮 step 开始前，Scheduler 会根据 running 队列、waiting 队列、KV Cache 可用资源、max_num_seqs、max_num_batched_tokens 等约束，决定本轮要调度哪些请求以及每个请求本轮要计算多少 token。
+  调度时，Scheduler 会优先处理 running 队列中的请求。对于已经完成 prefill 的请求，本轮通常会继续安排 decode，生成新的 token；对于还处于 chunked prefill 阶段的 running 请求，本轮可能继续安排后续 prompt token 的 prefill。之后，如果本轮还有 token budget 和请求数量容量，Scheduler 会继续从 waiting 队列中选择新的请求，为其分配 KV Cache block，并把它加入 running 队列。
+  因此，在 vLLM 的实际调度中，一轮 step 并不一定只包含 prefill 或只包含 decode。同一个 batch 中可以同时包含老请求的 decode token，也可以包含新请求或长 prompt 请求的 prefill chunk。这也是Continuous Batching 提升吞吐的关键：GPU 不必等待某一批请求全部结束后才处理新请求，而是可以在每轮调度中动态补充、移除和推进请求。
+  每轮 step 执行完成后，Scheduler 会根据模型输出更新请求状态。对于 decode 请求，如果生成了 EOS token、达到最大生成长度，请求会从 running 队列中移除，并释放其占用的 KVCache 资源。对于尚未完成的请求，Scheduler 会保留其状态、已计算 token 数量以及 KV Cache block，在后续 step 中继续调度。
+附录
+RoPE相关公式推导
+旋转矩阵基础
+二维向量绕原点的旋转可被视作由特定二维矩阵所描述的线性变换。本节将从向量的几何关系出发，推导这一矩阵的具体结构。
+
+设有二维向量
+x=(a, b),
+其模为r，与 x轴的夹角为 α。根据几何关系可写为
+a=rcos⁡α
+b=rsin⁡α
+现在将该向量绕原点 逆时针旋转 θ得到新向量
+x'=(a', b')
+旋转保持向量长度不变，因此旋转后的向量仍为模长 r，但其与 x轴的夹角变为
+α+θ.
+于是旋转后的坐标可表示为
+a'=rcos⁡(α+θ),b'=rsin⁡(α+θ).
+利用三角恒等式
+cos⁡(α+θ)=cos⁡αcos⁡θ-sin⁡αsin⁡θ,sin⁡(α+θ)=sin⁡αcos⁡θ+cos⁡αsin⁡θ,
+代入得到
+a'=r(cos⁡αcos⁡θ-sin⁡αsin⁡θ)=acos⁡θ-bsin⁡θ,b'=r(sin⁡αcos⁡θ+cos⁡αsin⁡θ)=asin⁡θ+bcos⁡θ.
+将其写成矩阵形式为
+a'b'=abcosθsin⁡θ-sinθcosθ
+因此，二维向量绕原点旋转 θ的操作可以由以下矩阵线性实现：
+R(θ)=cosθsin⁡θ-sinθcosθ
+即为标准的二维旋转矩阵。
+旋转矩阵的叠加性
+旋转变换具有一个重要性质：连续多次旋转可等价于一次旋转，且旋转角度可加。具体而言，若向量先旋转 θ1，再旋转 θ2，则整体旋转角度为
+θ1+θ2.
+用旋转矩阵表示连续旋转的过程可写为
+x  →  xR(θ1) → xR(θ1)R(θ2)
+因此，这两次旋转的组合对应的整体变换矩阵为
+R(θ1)R(θ2)
+另一方面，一次等效的旋转 θ1+θ2的矩阵为
+R(θ1+θ2)
+因此应有
+R(θ1)R(θ2)=R(θ1+θ2)
+旋转矩阵的转置
+二维旋转矩阵可以写为
+R(θ)=cosθsin⁡θ-sinθcosθ
+把它转置，得到
+R(θ)⊤=cosθ-sinθsin⁡θcosθ
+另一方面，考虑角度取反的旋转矩阵：
+R(-θ)=cos⁡(-θ)sin⁡(-θ)-sin⁡(-θ)cos⁡(-θ)
+利用基本三角恒等式
+cos⁡(-θ)=cos⁡θ
+sin⁡(-θ)=-sin⁡θ
+可得
+R(-θ)=cosθ-sinθsin⁡θcosθ
+与上面的 R(θ)⊤比较，可见
+R(θ)⊤=R(-θ)
+LoRA相关数学基础
+矩阵的秩
+	矩阵的秩定义为矩阵中列向量（或行向量）线性独立的最大个数。秩反映了矩阵所包含的独立信息量。
+	例如：
+矩阵
+	A=1224
+	第二列是第一列的 2 倍，两列线性相关，秩为 1。
+矩阵
+	B=1001
+	两列线性无关，秩为 2。
+低秩矩阵
+设矩阵 W∈Rd×k，若 W的秩满足
+rank(W)≪min⁡(d,k),
+则称 W为低秩矩阵。此时矩阵的列向量（或行向量）之间存在大量线性关系。 
+例如：
+123246369
+第二、三列均可表示为第一列的倍数，因此该矩阵秩为 1。
+低秩分解
+设矩阵 W∈Rd×k，若 W的秩为 r，则存在：
+A∈Rd×r,B∈Rr×k
+使得：
+W=AB
+如下图所示：
+
+该表示称为矩阵的“秩-r分解”或低秩分解，这说明一个大矩阵可以由两个更小的矩阵完全表示。其直观含义如下：
+A的列向量提供矩阵的独立方向。
+B给出了这些方向的线性组合系数。

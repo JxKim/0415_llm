@@ -1,0 +1,163 @@
+analysis_report: false
+api_url: http://127.0.0.1:8000/v1
+chat_template: null
+dataset_args:
+  general_qa:
+    aggregation: mean
+    data_statistics: null
+    dataset_id: C:\PycharmProjects\projects\fine_tune_proj\benchmark\custom_eval\text\qa
+    default_subset: default
+    description: '
+
+      ## Overview
+
+
+      General-QA is a customizable question answering benchmark for evaluating language
+      models on open-ended text generation tasks. It supports flexible data formats
+      and configurable evaluation metrics.
+
+
+      ## Task Description
+
+
+      - **Task Type**: Open-Ended Question Answering
+
+      - **Input**: Question (with optional system prompt and conversation history)
+
+      - **Output**: Free-form text answer
+
+      - **Flexibility**: Supports custom datasets via local files
+
+
+      ## Key Features
+
+
+      - Flexible input format (query/answer or messages format)
+
+      - Optional system prompt support
+
+      - BLEU and Rouge evaluation metrics
+
+      - Custom dataset support via local file loading
+
+      - Extensible for various QA use cases
+
+
+      ## Evaluation Notes
+
+
+      - Default configuration uses **0-shot** evaluation
+
+      - Default metrics: **BLEU**, **Rouge** (Rouge-L-R as main score)
+
+      - Evaluates on **test** split
+
+      - See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/llm.html#qa)
+      for dataset format
+
+      '
+    eval_split: test
+    extra_params: {}
+    few_shot_num: 0
+    few_shot_prompt_template: null
+    few_shot_random: false
+    filters: null
+    force_redownload: false
+    metric_list:
+    - BLEU
+    - Rouge
+    name: general_qa
+    output_types:
+    - generation
+    paper_url: null
+    pretty_name: General-QA
+    prompt_template: '{query}'
+    query_template: null
+    review_timeout: null
+    sample_example: null
+    sandbox_config: {}
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - category1_knowledge_qa
+    - category2_diagnosis
+    - category3_scripts
+    - category4_complaints
+    system_prompt: null
+    tags:
+    - QA
+    - Custom
+    train_split: null
+dataset_dir: C:\Users\m1881\.cache\modelscope\hub\datasets
+dataset_hub: modelscope
+datasets:
+- general_qa
+debug: false
+enable_progress_tracker: false
+eval_backend: Native
+eval_batch_size: 4
+eval_config: null
+eval_type: openai_api
+evalscope_version: 1.6.0
+generation_config:
+  batch_size: 4
+  max_tokens: 256
+  temperature: 0.0
+ignore_errors: false
+judge_model_args:
+  api_url: https://api.deepseek.com
+  generation_config:
+    max_tokens: 1024
+    temperature: 0.0
+  model_id: deepseek-v4-pro
+  prompt_template: '你是一个汽车售后客服回复质量评测裁判。不要输出分析过程。
+
+    请判断模型回复的效果。最终输出一个分数。
+
+    最终只输出一个分数，格式必须为 [[0到1之间的小数]]，例如 [[0.8]]
+
+
+    评分标准：
+
+    1、格式规范：回复结构完整、要素齐全（如故障诊断需含紧急程度判断与建议、投诉处理需含共情/补救/升级路径），权重：0.3
+
+    2、信息准确：政策/价格/安全判断正确（涉及行车安全的分级判断错误直接给低分），权重：0.4
+
+    3、语气与共情：礼貌、专业、不推诿，权重：0.2
+
+    4、方案可执行：给出明确后续动作（到店检测/预约/拖车/留联系方式等），权重：0.1
+
+    最终将结果限制到0-1的范围
+
+
+    [题目]
+
+    {question}
+
+
+    [模型输出]
+
+    {pred}
+
+
+    输出一个最终的0-1的分数'
+  score_pattern: \[\[(\d+(?:\.\d+)?)\]\]
+  score_type: numeric
+judge_strategy: llm
+judge_worker_num: 1
+limit: null
+model: Qwen3-0.6B-finetuned
+model_args: {}
+model_id: Qwen3-0.6B-finetuned
+model_task: text_generation
+no_timestamp: false
+repeats: 1
+rerun_review: false
+sandbox_manager_config: {}
+sandbox_type: docker
+seed: 42
+stream: null
+timeout: null
+use_cache: null
+use_sandbox: false
+work_dir: C:\PycharmProjects\projects\fine_tune_proj\outputs\evalscope\sft_model\20260820_164030
